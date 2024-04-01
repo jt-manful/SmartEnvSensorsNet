@@ -1,5 +1,5 @@
-CREATE DATABASE "final_project";
-use "final_project";
+CREATE DATABASE final_project;
+use final_project;
 
 -- Creation of SmartNodes Table
 CREATE TABLE SmartNodes (
