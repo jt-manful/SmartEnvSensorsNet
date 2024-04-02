@@ -12,6 +12,9 @@ DHT dht(DHTPIN, DHTTYPE);
 // LDR setup
 const int ldrPin = 33; 
 
+//LED setup
+const int ledPin = 13;
+
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
 
@@ -20,8 +23,15 @@ unsigned long lastHumidityReadTime = 0;
 unsigned long lastTemperatureAndLightReadTime = 0;
 unsigned long lastSaveTime = 0;
 
+// LED interval for blinking (in milliseconds)
+const unsigned long blinkInterval = 2000; // 2 seconds
+unsigned long previousMillis = 0;
+
+void blinkLED();
+
 void setup() {
   Serial.begin(115200);
+  
    if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
@@ -33,10 +43,13 @@ void setup() {
   lcd.backlight();
 
   pinMode(ldrPin, INPUT); 
+  pinMode(ledPin, OUTPUT);
 }
 
 void loop() {
   unsigned long currentTime = millis();
+
+  blinkLED();
 
   // Read and display humidity every 3 seconds
   if (currentTime - lastHumidityReadTime >= 3000) {
@@ -102,4 +115,19 @@ void loop() {
   }
 
 
+}
+
+
+void blinkLED() {
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= blinkInterval) {
+    previousMillis = currentMillis;
+
+    if (digitalRead(ledPin) == LOW) {
+      digitalWrite(ledPin, HIGH);
+    } else {
+      digitalWrite(ledPin, LOW);
+    }
+  }
 }
