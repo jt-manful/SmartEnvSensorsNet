@@ -1,75 +1,14 @@
-// #include "DHT.h"
-// #include <PubSubClient.h>
-// #include <WiFi.h>
-
-// #define DHTPIN 18
-// #define DHTTYPE DHT22
-
-// DHT dht(DHTPIN, DHTTYPE);
-
-// const char* ssid = "Tsatsu";
-// const char* password = "tsatsu123";
-
-// // Update MQTT broker details with your local MQTT server
-// const char *mqtt_broker = "172.16.7.215";
-// const char *topic = "iotlab6/test";
-// const int mqtt_port = 1883;
-
-// WiFiClient espClient;
-// PubSubClient client(espClient);
-
-// void setup() {
-//   Serial.begin(115200);
-
-//   WiFi.begin(ssid, password);
-//   while (WiFi.status() != WL_CONNECTED){
-//     delay(500);
-//     Serial.println("Connecting to WiFi...");
-//   }
-
-//   Serial.println("Connected to the WiFi network");
-  
-//   //connecting to the local MQTT broker
-//   client.setServer(mqtt_broker, mqtt_port);
-//   while (!client.connected()) {
-//       String client_id = "clientId-";
-//       client_id += String(WiFi.macAddress());
-//       Serial.printf("The client %s connects to the local mqtt broker\n", client_id.c_str());
-//       if (client.connect(client_id.c_str())) {
-//           Serial.println("Local MQTT broker connected");
-//       } else {
-//           Serial.print("failed with state ");
-//           Serial.print(client.state());
-//           delay(2000);
-//       }
-//   }
-
-//   dht.begin();
-// }
-
-// void loop() {
-//   float t = dht.readTemperature();
-
-//   // Check if any reads failed and exit early (to try again).
-//   if (isnan(t)) {
-//     Serial.println(F("Failed to read from DHT sensor!"));
-//     return;
-//   }
-
-//   // Publish temperature value to the specified topic
-//   client.publish(topic, String(t).c_str());
-//   delay(2000);
-
-//   Serial.print(F("Temperature: "));
-//   Serial.println(t);
-// }
-
+#ifndef DEVICE_ID
+#define DEVICE_ID "default-id"
+#endif
 
 #include <Wire.h>
 #include <SPIFFS.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 
 // DHT sensor setup
 #define DHTPIN 18  
@@ -87,8 +26,26 @@ unsigned long lastHumidityReadTime = 0;
 unsigned long lastTemperatureAndLightReadTime = 0;
 unsigned long lastSaveTime = 0;
 
+const char* ssid = "Tsatsu";
+const char* password = "tsatsu123";
+
+// Update MQTT broker details with your local MQTT server
+const char *mqtt_broker = "172.16.6.244";
+const char *topic1 = "iotfinal/temp1";
+const char *topic2 = "iotfinal/hum1";
+const char *topic3 = "iotfinal/light1";
+
+const int mqtt_port = 1883;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void connectMQTTBroker();
+void connectToWifi();
+
 void setup() {
   Serial.begin(115200);
+  Serial.println("Device ID: " DEVICE_ID);
    if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
@@ -99,7 +56,10 @@ void setup() {
   lcd.init();
   lcd.backlight();
 
-  pinMode(ldrPin, INPUT); 
+  pinMode(ldrPin, INPUT);
+
+  connectToWifi();
+  connectMQTTBroker(); 
 }
 
 void loop() {
@@ -150,6 +110,12 @@ void loop() {
     float temperature = dht.readTemperature();
     int lightIntensity = analogRead(ldrPin);
     String dataString = String(currentTime) + "," + String(temperature) + "," + String(humidity) + "," + String(lightIntensity) + "\n";
+
+  // Publish temperature value to the specified topic
+    client.publish(topic1, String(temperature).c_str());
+    // client.publish(topic2, String(humidity).c_str());
+    // client.publish(topic3, String(lightIntensity).c_str());
+    delay(2000);
     
     // Open file for appending
     File file = SPIFFS.open("/sensor_data.txt", FILE_APPEND);
@@ -172,5 +138,28 @@ void loop() {
 }
 
 void connectMQTTBroker(){
-    
+  //connecting to the local MQTT broker
+  client.setServer(mqtt_broker, mqtt_port);
+  while (!client.connected()) {
+      String client_id = "clientId-";
+      client_id += String(WiFi.macAddress());
+      Serial.printf("The client %s connects to the local mqtt broker\n", client_id.c_str());
+      if (client.connect(client_id.c_str())) {
+          Serial.println("Local MQTT broker connected");
+      } else {
+          Serial.print("failed with state ");
+          Serial.print(client.state());
+          delay(2000);
+      }
+  }
+}
+
+void connectToWifi(){
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED){
+    delay(500);
+    Serial.println("Connecting to WiFi...");
+  }
+
+  Serial.println("Connected to the WiFi network");
 }
