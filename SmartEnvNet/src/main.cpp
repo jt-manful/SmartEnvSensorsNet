@@ -1,3 +1,7 @@
+#ifndef DEVICE_ID
+#define DEVICE_ID "default_id"
+#endif
+
 #include <Wire.h>
 #include <SPIFFS.h>
 #include <LiquidCrystal_I2C.h>
@@ -22,6 +26,8 @@ unsigned long lastSaveTime = 0;
 
 void setup() {
   Serial.begin(115200);
+   Serial.print("Device ID: ");
+  Serial.println(DEVICE_ID);
    if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
@@ -68,7 +74,7 @@ void loop() {
     lcd.print("C   ");
 
     // Display light intensity
-    lcd.setCursor(0, 1);
+    // lcd.setCursor(0, 1);
     lcd.print("Light: ");
     lcd.print(lightIntensity);
     lcd.print("   ");

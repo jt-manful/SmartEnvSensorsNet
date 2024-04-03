@@ -7,6 +7,13 @@
 // #include <WiFiClient.h>
 // #include <HTTPClient.h>
 
+// //
+// const int LEDTypeID = 1;
+// const int  HumTypeID =  3;
+// const int  TempTypeID = 2;
+
+// const int NodeID = 0;
+
 // // DHT sensor setup
 // #define DHTPIN 18  
 // #define DHTTYPE DHT22 
@@ -22,6 +29,16 @@
 // unsigned long lastHumidityReadTime = 0;
 // unsigned long lastTemperatureAndLightReadTime = 0;
 // unsigned long lastSaveTime = 0;
+
+// //WiFi credentials and server address for sending data
+// const char* ssid = "JOHN-2 9490";
+// const char* password = "deeznuts";
+// const char* serverName = "http://172.16.2.250/final_project/api.php";
+
+// //values to post
+// float humidity;
+// float temparature;
+// int lightIntensity;
 
 // void setup() {
 //   Serial.begin(115200);
@@ -43,7 +60,7 @@
 
 //   // Read and display humidity every 3 seconds
 //   if (currentTime - lastHumidityReadTime >= 3000) {
-//     float humidity = dht.readHumidity();
+//      humidity = dht.readHumidity();
 //     lastHumidityReadTime = currentTime;
 
 //     // Display humidity
@@ -77,7 +94,7 @@
 //     lcd.print("   ");
 //   }
 
-//   // Save data to SPIFFS once every minute
+//   // Save data to SPIFFS and Database once every minute
 //   if (currentTime - lastSaveTime >= 60000) {
 //     lastSaveTime = currentTime;
     
@@ -105,4 +122,38 @@
 //   }
 
 
+// }
+
+
+
+// void sendData() {
+
+//   if (WiFi.status() == WL_CONNECTED) {
+//     WiFiClient client;
+//     HTTPClient http;
+//     http.begin(client, serverName);
+//     http.addHeader("Content-Type", "application/json");
+//     String temp_json = "{\"NodeID\":\"" + String(NodeID)+ "\",\"TypeID\":\"" + String(TempTypeID) + "\",\"Value\":\"" + String(temparature) + "\"}";
+//     String hum_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"TypeID\":\"" + String(HumTypeID) + "\",\"Value\":\"" + String(humidity) + "\"}";
+//     String ldr_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"TypeID\":\"" + String(LEDTypeID) + "\",\"Value\":\"" + String(lightIntensity) + "\"}";
+
+//     Serial.println("jsons: ");
+//     Serial.println(temp_json);
+//     Serial.println(hum_json);
+//     Serial.println(ldr_json);
+
+//     int httpResponseCode = http.POST(temp_json);
+//     Serial.print("HTTP Response code (temp): ");
+//     Serial.println(httpResponseCode);
+//     httpResponseCode = http.POST(hum_json);
+//     Serial.print("HTTP Response code (hum): ");
+//     Serial.println(httpResponseCode);
+//     httpResponseCode = http.POST(ldr_json);
+//     Serial.print("HTTP Response code (DHT): ");
+//     Serial.println(httpResponseCode);
+//     http.end(); // Free resources
+
+//   } else {
+//     Serial.println("WiFi Disconnected");
+//   }
 // }
