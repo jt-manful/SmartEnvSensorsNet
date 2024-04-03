@@ -1,159 +1,199 @@
-// #include <Wire.h>
-// #include <SPIFFS.h>
-// #include <LiquidCrystal_I2C.h>
-// #include <Adafruit_Sensor.h>
-// #include <DHT.h>
-// #include <WiFi.h>
-// #include <WiFiClient.h>
-// #include <HTTPClient.h>
+#ifndef DEVICE_ID
+#define DEVICE_ID "default_id"
+#endif
 
-// //
-// const int LEDTypeID = 1;
-// const int  HumTypeID =  3;
-// const int  TempTypeID = 2;
+#include <Wire.h>
+#include <SPIFFS.h>
+#include <LiquidCrystal_I2C.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <HTTPClient.h>
 
-// const int NodeID = 0;
+//
+const int LEDTypeID = 1;
+const int  HumTypeID =  3;
+const int  TempTypeID = 2;
 
-// // DHT sensor setup
-// #define DHTPIN 18  
-// #define DHTTYPE DHT22 
-// DHT dht(DHTPIN, DHTTYPE);
+const int NodeID = (DEVICE_ID == "indoor_sensor" ? 1 :  2);
 
-// // LDR setup
-// const int ldrPin = 33; 
+// DHT sensor setup
+#define DHTPIN 18  
+#define DHTTYPE DHT22 
+DHT dht(DHTPIN, DHTTYPE);
 
-// // LCD setup
-// LiquidCrystal_I2C lcd(0x27, 20, 4); 
+// LDR setup
+const int ldrPin = 33; 
 
-// // Timing variables
-// unsigned long lastHumidityReadTime = 0;
-// unsigned long lastTemperatureAndLightReadTime = 0;
-// unsigned long lastSaveTime = 0;
+// LCD setup
+LiquidCrystal_I2C lcd(0x27, 20, 4); 
 
-// //WiFi credentials and server address for sending data
-// const char* ssid = "JOHN-2 9490";
-// const char* password = "deeznuts";
-// const char* serverName = "http://172.16.2.250/final_project/api.php";
+// Timing variables
+unsigned long lastHumidityReadTime = 0;
+unsigned long lastTemperatureAndLightReadTime = 0;
+unsigned long lastSaveTime = 0;
 
-// //values to post
-// float humidity;
-// float temparature;
-// int lightIntensity;
+//WiFi credentials and server address for sending data
+const char* ssid = "JOHN-2 9490";
+const char* password = "deeznuts";
+const char* serverName = "http://172.16.2.250/final_project/api.php";
 
-// void setup() {
-//   Serial.begin(115200);
-//    if (!SPIFFS.begin(true)) {
-//     Serial.println("An Error has occurred while mounting SPIFFS");
-//     return;
-//   }
-//   dht.begin();
+//values to post
+float humidity;
+float temperature;
+int lightIntensity;
 
-//   // Initialize the LCD
-//   lcd.init();
-//   lcd.backlight();
+void sendData();
+bool  setupNetwork();
 
-//   pinMode(ldrPin, INPUT); 
-// }
+void setup() {
+  Serial.begin(115200);
+  Serial.print("Device ID: ");
+  Serial.println(DEVICE_ID);
+   if (!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
+  dht.begin();
 
-// void loop() {
-//   unsigned long currentTime = millis();
+  // Initialize the LCD
+  lcd.init();
+  lcd.backlight();
 
-//   // Read and display humidity every 3 seconds
-//   if (currentTime - lastHumidityReadTime >= 3000) {
-//      humidity = dht.readHumidity();
-//     lastHumidityReadTime = currentTime;
+  pinMode(ldrPin, INPUT); 
 
-//     // Display humidity
-//     lcd.setCursor(0, 0);
-//     lcd.print("Humidity: ");
-//     lcd.print(humidity);
-//     lcd.print("%   ");
+  setupNetwork();
+}
 
-//     lcd.setCursor(0, 1);
-//     lcd.print("                ");
+void loop() {
+  unsigned long currentTime = millis();
+
+  // Read and display humidity every 3 seconds
+  if (currentTime - lastHumidityReadTime >= 3000) {
+     humidity = dht.readHumidity();
+    lastHumidityReadTime = currentTime;
+
+    // Display humidity
+    lcd.setCursor(0, 0);
+    lcd.print("Humidity: ");
+    lcd.print(humidity);
+    lcd.print("%   ");
+
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
     
     
-//   }
+  }
 
-//   // Read and display temperature and light intensity every 6 seconds
-//   if (currentTime - lastTemperatureAndLightReadTime >= 6000) {
-//     float temperature = dht.readTemperature();
-//     int lightIntensity = analogRead(ldrPin);
-//     lastTemperatureAndLightReadTime = currentTime;
+  // Read and display temperature and light intensity every 6 seconds
+  if (currentTime - lastTemperatureAndLightReadTime >= 6000) {
+    temperature = dht.readTemperature();
+    lightIntensity = analogRead(ldrPin);
+    lastTemperatureAndLightReadTime = currentTime;
 
-//     // Display temperature
-//     lcd.setCursor(0, 0);
-//     lcd.print("Temp: ");
-//     lcd.print(temperature);
-//     lcd.print("C   ");
+    // Display temperature
+    lcd.setCursor(0, 0);
+    lcd.print("Temp: ");
+    lcd.print(temperature);
+    lcd.print("C   ");
 
-//     // Display light intensity
-//     lcd.setCursor(0, 1);
-//     lcd.print("Light: ");
-//     lcd.print(lightIntensity);
-//     lcd.print("   ");
-//   }
+    // Display light intensity
+    lcd.setCursor(0, 1);
+    lcd.print("Light: ");
+    lcd.print(lightIntensity);
+    lcd.print("   ");
+  }
 
-//   // Save data to SPIFFS and Database once every minute
-//   if (currentTime - lastSaveTime >= 60000) {
-//     lastSaveTime = currentTime;
+  // Save data to SPIFFS and Database once every minute
+  if (currentTime - lastSaveTime >= 10000) {
+    lastSaveTime = currentTime;
     
-//     // Construct the data string to save
-//     float humidity = dht.readHumidity();
-//     float temperature = dht.readTemperature();
-//     int lightIntensity = analogRead(ldrPin);
-//     String dataString = String(currentTime) + "," + String(temperature) + "," + String(humidity) + "," + String(lightIntensity) + "\n";
+    sendData();
+    // Construct the data string to save
+    float humidity = dht.readHumidity();
+    float temperature = dht.readTemperature();
+    int lightIntensity = analogRead(ldrPin);
+    String dataString =  String(temperature) + "," + String(humidity) + "," + String(lightIntensity) + "\n";
     
-//     // Open file for appending
-//     File file = SPIFFS.open("/sensor_data.txt", FILE_APPEND);
-//     if(!file){
-//       Serial.println("There was an error opening the file for appending");
-//       return;
-//     }
+    // Open file for appending
+    File file = SPIFFS.open("/sensor_data.txt", FILE_APPEND);
+    if(!file){
+      Serial.println("There was an error opening the file for appending");
+      return;
+    }
     
-//     if(file.print(dataString)){
-//       Serial.println("Data saved: " + dataString);
-//     } else {
-//       Serial.println("Write failed");
-//     }
+    if(file.print(dataString)){
+      Serial.println("Data saved: " + dataString);
+    } else {
+      Serial.println("Write failed");
+    }
 
-//     // Always close the file when you're done with it
-//     file.close();
-//   }
-
-
-// }
+    // Always close the file when you're done with it
+    file.close();
+  }
 
 
+}
 
-// void sendData() {
 
-//   if (WiFi.status() == WL_CONNECTED) {
-//     WiFiClient client;
-//     HTTPClient http;
-//     http.begin(client, serverName);
-//     http.addHeader("Content-Type", "application/json");
-//     String temp_json = "{\"NodeID\":\"" + String(NodeID)+ "\",\"TypeID\":\"" + String(TempTypeID) + "\",\"Value\":\"" + String(temparature) + "\"}";
-//     String hum_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"TypeID\":\"" + String(HumTypeID) + "\",\"Value\":\"" + String(humidity) + "\"}";
-//     String ldr_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"TypeID\":\"" + String(LEDTypeID) + "\",\"Value\":\"" + String(lightIntensity) + "\"}";
 
-//     Serial.println("jsons: ");
-//     Serial.println(temp_json);
-//     Serial.println(hum_json);
-//     Serial.println(ldr_json);
+void sendData() {
 
-//     int httpResponseCode = http.POST(temp_json);
-//     Serial.print("HTTP Response code (temp): ");
-//     Serial.println(httpResponseCode);
-//     httpResponseCode = http.POST(hum_json);
-//     Serial.print("HTTP Response code (hum): ");
-//     Serial.println(httpResponseCode);
-//     httpResponseCode = http.POST(ldr_json);
-//     Serial.print("HTTP Response code (DHT): ");
-//     Serial.println(httpResponseCode);
-//     http.end(); // Free resources
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, serverName);
+    http.addHeader("Content-Type", "application/json");
+    String temp_json = "{\"NodeID\":\"" + String(NodeID)+ "\",\"TypeID\":\"" + String(TempTypeID) + "\",\"Value\":\"" + String(temperature) + "\"}";
+    String hum_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"TypeID\":\"" + String(HumTypeID) + "\",\"Value\":\"" + String(humidity) + "\"}";
+    String ldr_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"TypeID\":\"" + String(LEDTypeID) + "\",\"Value\":\"" + String(lightIntensity) + "\"}";
 
-//   } else {
-//     Serial.println("WiFi Disconnected");
-//   }
-// }
+    Serial.println("jsons: ");
+    Serial.println(temp_json);
+    Serial.println(hum_json);
+    Serial.println(ldr_json);
+
+    int httpResponseCode = http.POST(temp_json);
+    Serial.print("HTTP Response code (temp): ");
+    Serial.println(httpResponseCode);
+    httpResponseCode = http.POST(hum_json);
+    Serial.print("HTTP Response code (hum): ");
+    Serial.println(httpResponseCode);
+    httpResponseCode = http.POST(ldr_json);
+    Serial.print("HTTP Response code (DHT): ");
+    Serial.println(httpResponseCode);
+    http.end(); // Free resources
+
+  } else {
+    setupNetwork();
+  }
+}
+
+
+
+// Connect or reconnect to the WiFi network
+bool setupNetwork(){
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+
+   int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 10) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+
+  // Wait for connection
+  while(WiFi.status() != WL_CONNECTED) {
+    Serial.println("Failed to connect to WiFi. Please check your credentials");
+    return false;
+
+  }
+
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+  return true;
+
+}
