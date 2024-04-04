@@ -16,8 +16,7 @@ const int LEDTypeID = 1;
 const int  HumTypeID =  3;
 const int  TempTypeID = 2;
 
-const int NodeID = (DEVICE_ID == "indoor_sensor" ? 1 :  2);
-
+const int NodeID = (DEVICE_ID == "indoor_sensor" ? 2 :  1);
 // DHT sensor setup
 #define DHTPIN 18  
 #define DHTTYPE DHT22 
