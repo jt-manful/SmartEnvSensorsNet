@@ -1,3 +1,7 @@
+#ifndef DEVICE_ID
+#define DEVICE_ID "default-id"
+#endif
+
 #include <Wire.h>
 #include <SPIFFS.h>
 #include <LiquidCrystal_I2C.h>
@@ -31,7 +35,8 @@ void blinkLED();
 
 void setup() {
   Serial.begin(115200);
-  
+  Serial.print("Device ID: ");
+  Serial.println(DEVICE_ID);
    if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
