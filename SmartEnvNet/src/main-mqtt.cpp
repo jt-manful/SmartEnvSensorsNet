@@ -9,6 +9,8 @@
 #include <DHT.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <WiFiClientSecure.h>
+
 
 // DHT sensor setup
 #define DHTPIN 18  
@@ -30,18 +32,32 @@ const char* ssid = "Tsatsu";
 const char* password = "tsatsu123";
 
 // Update MQTT broker details with your local MQTT server
-const char *mqtt_broker = "172.16.6.244";
+const char* mqtt_server = "192.168.137.41"; 
+const int mqtt_port =1883;
 const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
 const char *topic3 = "iotfinal/light1";
 
-const int mqtt_port = 1883;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+unsigned long lastMsg = 0;
 
+#define MSG_BUFFER_SIZE  (50)
+char msg[MSG_BUFFER_SIZE];
+
+void publishMessage(const char* topic, String payload , boolean retained);
+void reconnect();
 void connectMQTTBroker();
 void connectToWifi();
+
+void callback(char* topic, byte* payload, unsigned int length) {
+  String incommingMessage = "";
+  for (int i = 0; i < length; i++) incommingMessage+=(char)payload[i];
+  
+  Serial.println("Message arrived ["+String(topic)+"]"+incommingMessage);
+ 
+}
 
 void setup() {
   Serial.begin(115200);
@@ -60,10 +76,36 @@ void setup() {
 
   connectToWifi();
   connectMQTTBroker(); 
+  client.setCallback(callback);
+
 }
+
+
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    String clientId = "ESP32Client-";   // Create a random client ID
+    clientId += String(random(0xffff), HEX);  //you could make this static
+    // Attempt to connect
+    if (client.connect(clientId.c_str())){//, mqtt_username, mqtt_password)) {
+      Serial.println("connected");
+
+      client.subscribe(topic1);   // subscribe the topics here
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");   // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
 
 void loop() {
   unsigned long currentTime = millis();
+  if (!client.connected()) reconnect();
+  client.loop();
 
   // Read and display humidity every 3 seconds
   if (currentTime - lastHumidityReadTime >= 3000) {
@@ -102,17 +144,18 @@ void loop() {
   }
 
   // Save data to SPIFFS once every minute
-  if (currentTime - lastSaveTime >= 60000) {
+  if (currentTime - lastSaveTime >= 10000) {
     lastSaveTime = currentTime;
     
     // Construct the data string to save
     float humidity = dht.readHumidity();
     float temperature = dht.readTemperature();
     int lightIntensity = analogRead(ldrPin);
-    String dataString = String(currentTime) + "," + String(temperature) + "," + String(humidity) + "," + String(lightIntensity) + "\n";
+    String dataString = String(temperature) + "," + String(humidity) + "," + String(lightIntensity) + "\n";
 
   // Publish temperature value to the specified topic
-    client.publish(topic1, String(temperature).c_str());
+      publishMessage(topic1,dataString,true);    
+    // client.publish(topic1, String(temperature).c_str(), true);
     // client.publish(topic2, String(humidity).c_str());
     // client.publish(topic3, String(lightIntensity).c_str());
     delay(2000);
@@ -139,7 +182,7 @@ void loop() {
 
 void connectMQTTBroker(){
   //connecting to the local MQTT broker
-  client.setServer(mqtt_broker, mqtt_port);
+  client.setServer(mqtt_server, mqtt_port);
   while (!client.connected()) {
       String client_id = "clientId-";
       client_id += String(WiFi.macAddress());
@@ -162,4 +205,11 @@ void connectToWifi(){
   }
 
   Serial.println("Connected to the WiFi network");
+}
+
+
+
+void publishMessage(const char* topic, String payload , boolean retained){
+  if (client.publish(topic, payload.c_str(), true))
+      Serial.println("Message publised ["+String(topic)+"]: "+payload);
 }
