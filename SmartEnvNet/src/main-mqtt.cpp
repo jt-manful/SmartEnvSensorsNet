@@ -40,6 +40,7 @@ const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
 const char *topic3 = "iotfinal/light1";
 
+const int NodeID = (DEVICE_ID == "indoor_sensor" ? 2 : 1);
 
 extern const char page1[];
 extern const char page2[];
@@ -165,13 +166,17 @@ void loop() {
     float humidity = dht.readHumidity();
     float temperature = dht.readTemperature();
     int lightIntensity = analogRead(ldrPin);
-    String dataString = String(temperature) + "," + String(humidity) + "," + String(lightIntensity) + "\n";
+    String dataString =  String(temperature) + "," +   String(humidity) + "," +  String(lightIntensity) +  "\n";
+
+    String dataStringTemp = String(NodeID) + "," + String(temperature);
+    String dataStringHum = String(NodeID) + "," + String(humidity);
+    String dataStringLDR = String(NodeID) + "," + String(lightIntensity);
 
   // Publish temperature value to the specified topic
-      publishMessage(topic1,dataString,true);    
-    // client.publish(topic1, String(temperature).c_str(), true);
-    // client.publish(topic2, String(humidity).c_str());
-    // client.publish(topic3, String(lightIntensity).c_str());
+      publishMessage(topic1,dataStringTemp,true);  
+      publishMessage(topic2,dataStringHum,true);  
+      publishMessage(topic3,dataStringLDR,true);    
+    
     delay(2000);
     
     // Open file for appending
