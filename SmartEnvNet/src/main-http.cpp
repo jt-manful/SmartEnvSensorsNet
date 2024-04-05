@@ -11,6 +11,8 @@
 #include <WiFiClient.h>
 #include <HTTPClient.h>
 #include <WebServer.h>
+#include <ArduinoJson.h>
+#include "htmltext.h"
 
 
 
@@ -46,7 +48,7 @@ unsigned long previousMillis = 0;
 //WiFi credentials and server address for sending data
 const char* ssid = "JOHN-2 9490";
 const char* password = "deeznuts";
-const char* serverName = "http://172.16.2.250/final_project/api.php";
+const char* serverName = "http://172.16.3.44/final_project/api.php";
 
 
 //set up access point
@@ -58,6 +60,11 @@ IPAddress gateway(192, 168, 2, 1);
 IPAddress subnet(255, 255, 255, 0);
 
 
+void handleRoot();
+void handleTemperaturePage();
+void handleConfigPage();
+void handleUpdateConfig();
+
 //values to post
 float humidity;
 float temperature;
@@ -65,10 +72,7 @@ int lightIntensity;
 
 void sendData();
 bool  setupNetwork();
-
-void base() {
-  server.send(200, "text/html", page);
-}
+void blinkLED();
 
 
 void setup() {
@@ -89,12 +93,26 @@ void setup() {
    pinMode(ledPin, OUTPUT);
 
   setupNetwork();
+  // setting up AP
+  WiFi.mode(WIFI_AP);
+  delay(1000);
+  WiFi.softAP(ssidAP, passwordAP);
+  WiFi.softAPConfig(local_ip, gateway, subnet);  // initialise Wi-Fi
+  server.begin();
+
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/temperature", HTTP_GET, handleTemperaturePage);
+  server.on("/config", HTTP_GET, handleConfigPage);
+  server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
+  
+
 }
 
 void loop() {
-  unsigned long currentTime = millis();
-   blinkLED();
 
+  unsigned long currentTime = millis();
+  blinkLED();
+  server.handleClient();
   // Read and display humidity every 3 seconds
   if (currentTime - lastHumidityReadTime >= 3000) {
      humidity = dht.readHumidity();
@@ -234,4 +252,34 @@ bool setupNetwork(){
   Serial.println(WiFi.localIP());
   return true;
 
+}
+
+void handleRoot() {
+  // Example of dynamically replacing placeholders in your page
+  String fullPage = String(page1); // Assuming page is your main page's HTML content
+  // fullPage.replace("<!--PLACEHOLDER-->", "Actual Value");
+  server.send(200, "text/html", fullPage.c_str());
+}
+
+void handleTemperaturePage() {
+  server.send_P(200, "text/html", page2);
+}
+
+void handleConfigPage() {
+  server.send_P(200, "text/html", page3);
+}
+
+void handleUpdateConfig() {
+  // This function needs to read the POST data and update your configuration accordingly
+  if (server.hasArg("plain") == false) {
+    server.send(400, "text/plain", "Bad Request");
+    return;
+  }
+
+  StaticJsonDocument<512> doc;
+  deserializeJson(doc, server.arg("plain"));
+
+  // Handle your configuration update here, possibly saving to SPIFFS
+
+  server.send(200, "text/plain", "Configuration Updated");
 }
