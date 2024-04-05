@@ -66,6 +66,8 @@ void handleRoot();
 void handleConfigPage();
 void handleUpdateConfig();
 void handleTemperaturePage();
+void handleSensorValues(float temperature, float humidity, int lightIntensity);
+void handleLDRRecords();
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
