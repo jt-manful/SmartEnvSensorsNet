@@ -25,6 +25,10 @@ DHT dht(DHTPIN, DHTTYPE);
 // LDR setup
 const int ldrPin = 33; 
 
+
+//LED setup
+const int ledPin = 13;
+
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
 
@@ -61,12 +65,14 @@ void setup() {
   lcd.backlight();
 
   pinMode(ldrPin, INPUT); 
+   pinMode(ledPin, OUTPUT);
 
   setupNetwork();
 }
 
 void loop() {
   unsigned long currentTime = millis();
+   blinkLED();
 
   // Read and display humidity every 3 seconds
   if (currentTime - lastHumidityReadTime >= 3000) {
@@ -135,7 +141,19 @@ void loop() {
 
 }
 
+void blinkLED() {
+  unsigned long currentMillis = millis();
 
+  if (currentMillis - previousMillis >= blinkInterval) {
+    previousMillis = currentMillis;
+
+    if (digitalRead(ledPin) == LOW) {
+      digitalWrite(ledPin, HIGH);
+    } else {
+      digitalWrite(ledPin, LOW);
+    }
+  }
+}
 
 void sendData() {
 
