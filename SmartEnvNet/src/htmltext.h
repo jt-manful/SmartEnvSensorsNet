@@ -116,7 +116,7 @@ const char page2[] PROGMEM = R"rawliteral(
 )rawliteral";
 
 
-const char configPage[] PROGMEM = R"rawliteral(
+const char page3[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>

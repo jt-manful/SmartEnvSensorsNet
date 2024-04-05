@@ -43,10 +43,6 @@ const char *topic3 = "iotfinal/light1";
 
 const int NodeID = (DEVICE_ID == "indoor_sensor" ? 2 : 1);
 
-extern const char page1[];
-extern const char page2[];
-extern const char page3[];
-
 
 WiFiClient espClient;
 PubSubClient client(espClient);
