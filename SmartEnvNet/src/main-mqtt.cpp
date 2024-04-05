@@ -25,6 +25,10 @@ const int ldrPin = 33;
 const int fanPin = 19;
 bool fanState = false;
 
+float globalTemperature;
+float globalHumidity;
+int globalLightIntensity;
+
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
 WebServer server(80);
@@ -111,7 +115,9 @@ void setup() {
   server.on("/config", HTTP_GET, handleConfigPage);
   server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
   server.on("/getLDRRecords", HTTP_GET, handleLDRRecords);
-
+  server.on("/sensorValue", HTTP_GET, []() {
+    handleSensorValues(globalTemperature, globalHumidity, globalLightIntensity);
+  });
   server.on("/startFan", HTTP_GET, []() {
     fanState = true; // Turn fan on
     digitalWrite(fanPin, HIGH);
@@ -201,6 +207,8 @@ void loop() {
     String dataStringTemp = String(NodeID) + "," + String(temperature);
     String dataStringHum = String(NodeID) + "," + String(humidity);
     String dataStringLDR = String(NodeID) + "," + String(lightIntensity);
+
+    handleSensorValues(temperature, humidity, lightIntensity);
 
   // Publish temperature value to the specified topic
       publishMessage(topic1,dataStringTemp,true);  
@@ -294,8 +302,22 @@ void handleUpdateConfig() {
   server.send(200, "text/plain", "Configuration Updated");
 }
 
+void handleSensorValues(float temperature, float humidity, int lightIntensity) {
+  StaticJsonDocument<200> doc;
+  doc["temperature"] = temperature;
+  doc["humidity"] = humidity;
+  doc["lightIntensity"] = lightIntensity;
+
+  String json;
+  serializeJson(doc, json);
+  server.send(200, "application/json", json);
+}
+
 void handleLDRRecords() {
-  char* lastEndpoint = "http://172.16.3.44/final_project/viewldr25";
+  String baseEndpoint = "http://172.16.3.44/final_project/viewldr25.php?NodeName=";
+  String lastEndpointCStr = baseEndpoint + DEVICE_ID;
+
+  const char* lastEndpoint = lastEndpointCStr.c_str();
   //Check WiFi connection status
     if(WiFi.status()== WL_CONNECTED){
       HTTPClient http;      

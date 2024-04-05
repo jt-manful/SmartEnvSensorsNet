@@ -53,7 +53,7 @@ char page1[] PROGMEM = R"rawliteral(
           var records = JSON.parse(this.responseText);
           var html = '<table class="record-table"><tr><th>Timestamp</th><th>LDR Value</th></tr>';
           records.forEach(function(record) {
-            html += '<tr><td>' + record.timestamp + '</td><td>' + record.ldr_value + '</td></tr>';
+            html += '<tr><td>' + record.Timestamp + '</td><td>' + record.value + '</td></tr>';
           });
           html += '</table>';
           document.getElementById('ldr_records').innerHTML = html;
@@ -63,11 +63,14 @@ char page1[] PROGMEM = R"rawliteral(
       xhttp.send();
     }
 
-    function fetchSensorValue() {
+  function fetchSensorValue() {
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
-          document.getElementById('sensor_value').innerHTML = this.responseText;
+          var data = JSON.parse(this.responseText);
+          document.getElementById('temperature').innerHTML = "Current Temperature: " + data.temperature + "°C";
+          document.getElementById('humidity').innerHTML = "Current Humidity: " + data.humidity + "%";
+          document.getElementById('lightIntensity').innerHTML = "Current Light Intensity: " + data.lightIntensity;
         }
       };
       xhttp.open('GET', '/sensorValue', true);
