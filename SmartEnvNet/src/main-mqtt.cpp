@@ -10,7 +10,9 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
-
+#include <WebServer.h>
+#include <ArduinoJson.h>
+#include "htmltext.h"
 
 // DHT sensor setup
 #define DHTPIN 18  
@@ -37,6 +39,11 @@ const int mqtt_port =1883;
 const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
 const char *topic3 = "iotfinal/light1";
+
+
+extern const char page1[];
+extern const char page2[];
+extern const char page3[];
 
 
 WiFiClient espClient;
@@ -74,10 +81,17 @@ void setup() {
 
   pinMode(ldrPin, INPUT);
 
+  server.begin();
+
   connectToWifi();
   connectMQTTBroker(); 
   client.setCallback(callback);
 
+
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/temperature", HTTP_GET, handleTemperaturePage);
+  server.on("/config", HTTP_GET, handleConfigPage);
+  server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
 }
 
 
@@ -212,4 +226,34 @@ void connectToWifi(){
 void publishMessage(const char* topic, String payload , boolean retained){
   if (client.publish(topic, payload.c_str(), true))
       Serial.println("Message publised ["+String(topic)+"]: "+payload);
+}
+
+void handleRoot() {
+  // Example of dynamically replacing placeholders in your page
+  String fullPage = String(page1); // Assuming `page` is your main page's HTML content
+  // fullPage.replace("<!--PLACEHOLDER-->", "Actual Value");
+  server.send(200, "text/html", fullPage.c_str());
+}
+
+void handleTemperaturePage() {
+  server.send_P(200, "text/html", page2);
+}
+
+void handleConfigPage() {
+  server.send_P(200, "text/html", page3);
+}
+
+void handleUpdateConfig() {
+  // This function needs to read the POST data and update your configuration accordingly
+  if (server.hasArg("plain") == false) {
+    server.send(400, "text/plain", "Bad Request");
+    return;
+  }
+
+  StaticJsonDocument<512> doc;
+  deserializeJson(doc, server.arg("plain"));
+
+  // Handle your configuration update here, possibly saving to SPIFFS
+
+  server.send(200, "text/plain", "Configuration Updated");
 }
