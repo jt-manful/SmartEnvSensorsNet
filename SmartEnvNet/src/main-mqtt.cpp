@@ -21,6 +21,8 @@ DHT dht(DHTPIN, DHTTYPE);
 
 // LDR setup
 const int ldrPin = 33; 
+const int fanPin = 19;
+bool fanState = false;
 
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
@@ -78,6 +80,7 @@ void setup() {
   lcd.backlight();
 
   pinMode(ldrPin, INPUT);
+  pinMode(fanPin, OUTPUT);
 
   WiFi.mode(WIFI_AP);
   delay(1000);
@@ -102,6 +105,44 @@ void setup() {
   server.on("/temperature", HTTP_GET, handleTemperaturePage);
   server.on("/config", HTTP_GET, handleConfigPage);
   server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
+  server.on("/getLDRRecords", HTTP_GET, []() {
+    // This function needs to read the last 25 LDR records from SPIFFS and return them as JSON
+    File file = SPIFFS.open("/sensor_data.txt", FILE_READ);
+    if(!file){
+      server.send(500, "text/plain", "Error reading file");
+      return;
+    }
+
+    String records = "[";
+
+    while(file.available()){
+      String record = file.readStringUntil('\n');
+      if(record.length() == 0) continue;
+
+      records += "{";
+      records += "\"timestamp\": \"" + record.substring(0, record.indexOf(',')) + "\", ";
+      records += "\"ldr_value\": " + record.substring(record.lastIndexOf(',') + 1);
+      records += "},";
+    }
+
+    records.remove(records.length() - 1);
+    records += "]";
+
+    server.send(200, "application/json", records);
+  });
+
+
+  server.on("/startFan", HTTP_GET, []() {
+    fanState = true; // Turn fan on
+    digitalWrite(fanPin, HIGH);
+    server.send(200, "text/plain", "Fan started");
+  });
+
+  server.on("/stopFan", HTTP_GET, []() {
+    fanState = false; // Turn fan off
+    digitalWrite(fanPin, LOW);
+    server.send(200, "text/plain", "Fan stopped");
+  });
 }
 
 
