@@ -8,6 +8,7 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <WiFi.h>
+#include <HTTPClient.h>
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
 #include <WebServer.h>
@@ -105,32 +106,7 @@ void setup() {
   server.on("/temperature", HTTP_GET, handleTemperaturePage);
   server.on("/config", HTTP_GET, handleConfigPage);
   server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
-  server.on("/getLDRRecords", HTTP_GET, []() {
-    // This function needs to read the last 25 LDR records from SPIFFS and return them as JSON
-    File file = SPIFFS.open("/sensor_data.txt", FILE_READ);
-    if(!file){
-      server.send(500, "text/plain", "Error reading file");
-      return;
-    }
-
-    String records = "[";
-
-    while(file.available()){
-      String record = file.readStringUntil('\n');
-      if(record.length() == 0) continue;
-
-      records += "{";
-      records += "\"timestamp\": \"" + record.substring(0, record.indexOf(',')) + "\", ";
-      records += "\"ldr_value\": " + record.substring(record.lastIndexOf(',') + 1);
-      records += "},";
-    }
-
-    records.remove(records.length() - 1);
-    records += "]";
-
-    server.send(200, "application/json", records);
-  });
-
+  server.on("/getLDRRecords", HTTP_GET, handleLDRRecords);
 
   server.on("/startFan", HTTP_GET, []() {
     fanState = true; // Turn fan on
@@ -312,4 +288,35 @@ void handleUpdateConfig() {
   // Handle your configuration update here, possibly saving to SPIFFS
 
   server.send(200, "text/plain", "Configuration Updated");
+}
+
+void handleLDRRecords() {
+  char* lastEndpoint = "http://172.16.3.44/final_project/viewldr25";
+  //Check WiFi connection status
+    if(WiFi.status()== WL_CONNECTED){
+      HTTPClient http;      
+      String serverPath = lastEndpoint;
+      // Your Domain name with URL path or IP address with path
+      http.begin(serverPath.c_str());
+      
+      // Send HTTP GET request
+      int httpResponseCode = http.GET();
+      
+      if (httpResponseCode>0) {
+        // Serial.print("HTTP Response code: ");
+        // Serial.println(httpResponseCode);
+        String payload = http.getString();
+        server.send(200, "text/plain", payload);
+        Serial.println(payload);
+      }
+      else {
+        Serial.print("Error code: ");
+        Serial.println(httpResponseCode);
+      }
+      // Free resources
+      http.end();
+    }
+    else {
+      Serial.println("WiFi Disconnected");
+    }
 }
