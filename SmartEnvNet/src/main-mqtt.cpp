@@ -24,6 +24,7 @@ const int ldrPin = 33;
 
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
+WebServer server(80);
 
 // Timing variables
 unsigned long lastHumidityReadTime = 0;
@@ -82,6 +83,18 @@ void setup() {
 
   pinMode(ldrPin, INPUT);
 
+  WiFi.mode(WIFI_AP);
+  delay(1000);
+
+  char ssidAP[] = "johntsatsu";
+  char passwordAP[] = "Sl@p@m";
+  IPAddress local_ip(192, 168, 2, 1);
+  IPAddress gateway(192, 168, 2, 1);
+  IPAddress subnet(255, 255, 255, 0);
+
+  WiFi.softAP(ssidAP, passwordAP);
+  WiFi.softAPConfig(local_ip, gateway, subnet);
+  
   server.begin();
 
   connectToWifi();
@@ -222,8 +235,9 @@ void connectToWifi(){
     delay(500);
     Serial.println("Connecting to WiFi...");
   }
-
-  Serial.println("Connected to the WiFi network");
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
 }
 
 
