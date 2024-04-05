@@ -10,6 +10,9 @@
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <HTTPClient.h>
+#include <WebServer.h>
+
+
 
 //
 const int LEDTypeID = 1;
@@ -25,7 +28,6 @@ DHT dht(DHTPIN, DHTTYPE);
 // LDR setup
 const int ldrPin = 33; 
 
-
 //LED setup
 const int ledPin = 13;
 
@@ -37,10 +39,24 @@ unsigned long lastHumidityReadTime = 0;
 unsigned long lastTemperatureAndLightReadTime = 0;
 unsigned long lastSaveTime = 0;
 
+// LED interval for blinking (in milliseconds)
+const unsigned long blinkInterval = 2000; // 2 seconds
+unsigned long previousMillis = 0;
+
 //WiFi credentials and server address for sending data
 const char* ssid = "JOHN-2 9490";
 const char* password = "deeznuts";
 const char* serverName = "http://172.16.2.250/final_project/api.php";
+
+
+//set up access point
+WebServer server(80);
+char ssidAP[] = "JohnM";
+char passwordAP[] = "qwerty123";
+IPAddress local_ip(192, 168, 2, 1);
+IPAddress gateway(192, 168, 2, 1);
+IPAddress subnet(255, 255, 255, 0);
+
 
 //values to post
 float humidity;
@@ -49,6 +65,11 @@ int lightIntensity;
 
 void sendData();
 bool  setupNetwork();
+
+void base() {
+  server.send(200, "text/html", page);
+}
+
 
 void setup() {
   Serial.begin(115200);
