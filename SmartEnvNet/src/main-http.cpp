@@ -12,6 +12,9 @@
 #include <HTTPClient.h>
 #include <WebServer.h>
 #include <ArduinoJson.h>
+#include <ArduinoOTA.h>
+#include <ESPmDNS.h>
+#include <WiFiUdp.h>
 #include "htmltext.h"
 
 
@@ -77,8 +80,10 @@ void blinkLED();
 
 void setup() {
   Serial.begin(115200);
+
   Serial.print("Device ID: ");
   Serial.println(DEVICE_ID);
+
    if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
@@ -90,7 +95,7 @@ void setup() {
   lcd.backlight();
 
   pinMode(ldrPin, INPUT); 
-   pinMode(ledPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
 
   setupNetwork();
   // setting up AP
@@ -104,13 +109,20 @@ void setup() {
   server.on("/temperature", HTTP_GET, handleTemperaturePage);
   server.on("/config", HTTP_GET, handleConfigPage);
   server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
-  
 
+
+  //ota stuff
+   Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  ArduinoOTA.setHostname("johnM");
+  ArduinoOTA.setPassword("qwerty123");
+  ArduinoOTA.begin();
 }
 
 void loop() {
 
   unsigned long currentTime = millis();
+   ArduinoOTA.handle();
   blinkLED();
   server.handleClient();
   // Read and display humidity every 3 seconds
