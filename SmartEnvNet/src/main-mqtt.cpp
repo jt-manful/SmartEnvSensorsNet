@@ -57,6 +57,10 @@ void publishMessage(const char* topic, String payload , boolean retained);
 void reconnect();
 void connectMQTTBroker();
 void connectToWifi();
+void handleRoot();
+void handleConfigPage();
+void handleUpdateConfig();
+void handleTemperaturePage();
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
