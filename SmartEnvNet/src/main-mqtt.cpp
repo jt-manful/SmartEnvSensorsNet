@@ -334,7 +334,7 @@ void handleLDRRecords() {
         // Serial.print("HTTP Response code: ");
         // Serial.println(httpResponseCode);
         String payload = http.getString();
-        server.send(200, "text/plain", payload);
+        server.send(200, "text/html", payload);
         Serial.println(payload);
       }
       else {
