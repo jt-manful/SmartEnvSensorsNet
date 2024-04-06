@@ -107,13 +107,16 @@ const char page2[] PROGMEM = R"rawliteral(
 
       document.addEventListener('DOMContentLoaded', function() {
         fetchData();
-        setInterval(fetchData, 5000);
+        setInterval(fetchData, 30000);
       });
     </script>
 </head>
 <body>
     <h1>Temperature & Humidity Data</h1>
-    <div id="dataContainer">Loading data...</div>
+    <div id="dataContainer">
+      <p id="temperature">Temperature: --°C</p>
+      <p id="humidity">Humidity: --%</p>
+    </div>
 </body>
 </html>
 )rawliteral";
