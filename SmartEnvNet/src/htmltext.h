@@ -126,51 +126,28 @@ const char page3[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Device Configuration</title>
+  <title>Device Configuration</title>
 </head>
 <body>
-    <h1>Device Configuration</h1>
-    <form id="configForm">
-        <label for="deviceId">Device ID/Name:</label><br>
-        <input type="text" id="deviceId" name="deviceId"><br>
-        
-        <label for="commMethod">Communication Method:</label><br>
-        <select id="commMethod" name="commMethod">
-            <option value="http">HTTP POST</option>
-            <option value="mqtt">MQTT Publish</option>
-        </select><br>
-        
-        <label for="manualOverride">Manual Override:</label><br>
-        <input type="checkbox" id="manualOverride" name="manualOverride"><br>
-        
-        <label for="triggerTemp">Trigger Temperature:</label><br>
-        <input type="number" id="triggerTemp" name="triggerTemp" step="0.1"><br>
-        
-        <input type="button" value="Submit" onclick="submitConfig()">
-    </form>
+  <h1>Device Configuration</h1>
+  <form action="/updateConfig" method="POST">
+    <label for="deviceId">Device ID/Name:</label><br>
+    <input type="text" id="deviceId" name="deviceId"><br>
     
-    <script>
-      function submitConfig() {
-        const form = document.getElementById('configForm');
-        const formData = new FormData(form);
-        const data = {};
-        formData.forEach((value, key) => {data[key] = value;});
-        fetch('/updateConfig', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        })
-        .then(response => response.text())
-        .then(data => {
-          alert('Configuration updated successfully!');
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-        });
-      }
-    </script>
+    <label for="commMethod">Communication Method:</label><br>
+    <select id="commMethod" name="commMethod">
+      <option value="http">HTTP</option>
+      <option value="mqtt">MQTT</option>
+    </select><br>
+    
+    <label for="manualOverride">Manual Fan Control:</label>
+    <input type="checkbox" id="manualOverride" name="manualOverride"><br>
+    
+    <label for="triggerTemp">Trigger Temperature:</label><br>
+    <input type="number" id="triggerTemp" name="triggerTemp"><br>
+    
+    <input type="submit" value="Submit">
+  </form>
 </body>
 </html>
 )rawliteral";

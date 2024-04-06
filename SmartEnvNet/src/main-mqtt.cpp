@@ -64,6 +64,13 @@ unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE  (50)
 char msg[MSG_BUFFER_SIZE];
 
+struct DeviceConfig {
+  String deviceId;
+  String commMethod;
+  bool manualOverride;
+  int triggerTemp;
+} deviceConfig;
+
 void publishMessage(const char* topic, String payload , boolean retained);
 void reconnect();
 void connectMQTTBroker();
@@ -74,6 +81,9 @@ void handleUpdateConfig();
 void handleTemperaturePage();
 void handleSensorValues(float globalTemperature, float globalHumidity, int globalLightIntensity); 
 void handleLDRRecords();
+void handleDataRequest();
+void loadConfiguration();
+void autoControlFan(bool forceAction, bool forceState, float currentTemperature);
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
@@ -82,7 +92,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println("Message arrived ["+String(topic)+"]"+incommingMessage);
  
 }
-
 
 void setup() {
   Serial.begin(115200);
@@ -123,18 +132,27 @@ void setup() {
   });
   
   server.on("/startFan", HTTP_GET, []() {
+  if (deviceConfig.manualOverride) {
     fanState = true; // Turn fan on
     digitalWrite(fanPin, HIGH);
     server.send(200, "text/plain", "Fan started");
+  } else {
+    autoControlFan(true);
+    server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode.");
+  }
   });
 
   server.on("/stopFan", HTTP_GET, []() {
-    fanState = false; // Turn fan off
-    digitalWrite(fanPin, LOW);
-    server.send(200, "text/plain", "Fan stopped");
+    if (deviceConfig.manualOverride) {
+      fanState = false; // Turn fan off
+      digitalWrite(fanPin, LOW);
+      server.send(200, "text/plain", "Fan stopped");
+    } else {
+      autoControlFan(false);
+      server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode.");
+    }
   });
 }
-
 
 void reconnect() {
   // Loop until we're reconnected
@@ -155,7 +173,6 @@ void reconnect() {
     }
   }
 }
-
 
 void loop() {
   unsigned long currentTime = millis();
@@ -215,7 +232,13 @@ void loop() {
 
     handleSensorValues(temperature, humidity, lightIntensity);
 
-  // Publish temperature value to the specified topic
+    if(!deviceConfig.manualOverride){
+      autoControlFan(false, false, temperature);
+    }
+
+    delay(1000);
+
+    // Publish temperature value to the specified topic
       publishMessage(topic1,dataStringTemp,true);  
       publishMessage(topic2,dataStringHum,true);  
       publishMessage(topic3,dataStringLDR,true);    
@@ -270,8 +293,6 @@ void connectToWifi(){
   Serial.println(WiFi.localIP());
 }
 
-
-
 void publishMessage(const char* topic, String payload , boolean retained){
   if (client.publish(topic, payload.c_str(), true))
       Serial.println("Message publised ["+String(topic)+"]: "+payload);
@@ -293,18 +314,54 @@ void handleConfigPage() {
 }
 
 void handleUpdateConfig() {
-  // This function needs to read the POST data and update your configuration accordingly
-  if (server.hasArg("plain") == false) {
+  if (!server.hasArg("plain")) {
     server.send(400, "text/plain", "Bad Request");
     return;
   }
 
   StaticJsonDocument<512> doc;
-  deserializeJson(doc, server.arg("plain"));
+  DeserializationError error = deserializeJson(doc, server.arg("plain"));
 
-  // Handle your configuration update here, possibly saving to SPIFFS
+  if (error) {
+    server.send(400, "text/plain", "Error parsing JSON");
+    return;
+  }
+
+  File file = SPIFFS.open("/config.json", FILE_WRITE);
+  if (!file) {
+    server.send(500, "text/plain", "Failed to open config file for writing");
+    return;
+  }
+
+  serializeJson(doc, file);
+  file.close();
 
   server.send(200, "text/plain", "Configuration Updated");
+  loadConfiguration();
+}
+
+void loadConfiguration() {
+  File configFile = SPIFFS.open("/config.json", FILE_READ);
+  if (!configFile) {
+    Serial.println("Failed to open config file");
+    return;
+  }
+
+  StaticJsonDocument<512> doc;
+  DeserializationError error = deserializeJson(doc, configFile);
+  if (error) {
+    Serial.println("Failed to parse config file");
+    return;
+  }
+
+  deviceConfig.deviceId = doc["deviceId"].as<String>();
+  deviceConfig.commMethod = doc["commMethod"].as<String>();
+  deviceConfig.manualOverride = doc["manualOverride"].as<bool>();
+  deviceConfig.triggerTemp = doc["triggerTemp"].as<int>();
+
+  //TODO: use the loaded values later
+
+  configFile.close();
 }
 
 void handleSensorValues(float temperature, float humidity, int lightIntensity) {
@@ -378,4 +435,23 @@ void handleDataRequest() {
   String jsonResponse = "{\"temperature\":" + temperature + ",\"humidity\":" + humidity + "}";
 
   server.send(200, "application/json", jsonResponse);
+}
+
+void autoControlFan(bool forceAction = false, bool forceState = false, float currentTemperature){
+
+  if (!deviceConfig.manualOverride) {
+    if (currentTemperature >= deviceConfig.triggerTemp || forceAction && forceState) {
+      if (!fanState) { // If the fan is not already on, turn it on
+        fanState = true;
+        digitalWrite(fanPin, HIGH);
+        // Log or send a message indicating the fan was turned on automatically or due to a forced action
+
+      }
+    } else if (fanState || (forceAction && !forceState)) { // Conditions for turning off the fan
+      fanState = false;
+      digitalWrite(fanPin, LOW);
+      // Log or send a message indicating the fan was turned off
+    }
+  }
+  // Optionally, handle cases where manualOverride is true if needed
 }
