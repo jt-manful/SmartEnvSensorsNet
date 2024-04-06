@@ -23,8 +23,8 @@ char page1[] PROGMEM = R"rawliteral(
   <h1>ESP32 AC Fan & LDR Sensor Control</h1>
   <p>Use the links below to navigate:</p>
   <ul>
-      <li><a href="192.168.2.1/temperature">Temperature Page</a></li>
-      <li><a href="192.168.2.1/config">Configuration Page</a></li>
+      <li><a href="/temperature">Temperature Page</a></li>
+      <li><a href="/config">Configuration Page</a></li>
   </ul>
   <p>Sensor Value: <span id='sensor_value'>Loading...</span></p>
   <button class='start' onclick='startFan()'>Start AC Fan</button>

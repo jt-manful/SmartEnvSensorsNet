@@ -38,11 +38,17 @@ unsigned long lastHumidityReadTime = 0;
 unsigned long lastTemperatureAndLightReadTime = 0;
 unsigned long lastSaveTime = 0;
 
-const char* ssid = "Tsatsu";
-const char* password = "tsatsu123";
+const char* ssid = "JOHN-2 9490";
+const char* password = "deeznuts";
+
+char ssidAP[] = "johntsatsu";
+char passwordAP[] = "qwerty123";
+IPAddress local_ip(192, 168, 2, 1);
+IPAddress gateway(192, 168, 2, 1);
+IPAddress subnet(255, 255, 255, 0);
 
 // Update MQTT broker details with your local MQTT server
-const char* mqtt_server = "192.168.137.41"; 
+const char* mqtt_server = "172.16.3.44"; 
 const int mqtt_port =1883;
 const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
@@ -66,7 +72,7 @@ void handleRoot();
 void handleConfigPage();
 void handleUpdateConfig();
 void handleTemperaturePage();
-void handleSensorValues(float temperature, float humidity, int lightIntensity);
+void handleSensorValues(float globalTemperature, float globalHumidity, int globalLightIntensity); 
 void handleLDRRecords();
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -76,6 +82,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println("Message arrived ["+String(topic)+"]"+incommingMessage);
  
 }
+
 
 void setup() {
   Serial.begin(115200);
@@ -96,12 +103,6 @@ void setup() {
   WiFi.mode(WIFI_AP);
   delay(1000);
 
-  char ssidAP[] = "johntsatsu";
-  char passwordAP[] = "Sl@p@m";
-  IPAddress local_ip(192, 168, 2, 1);
-  IPAddress gateway(192, 168, 2, 1);
-  IPAddress subnet(255, 255, 255, 0);
-
   WiFi.softAP(ssidAP, passwordAP);
   WiFi.softAPConfig(local_ip, gateway, subnet);
   
@@ -120,6 +121,7 @@ void setup() {
   server.on("/sensorValue", HTTP_GET, []() {
     handleSensorValues(globalTemperature, globalHumidity, globalLightIntensity);
   });
+  
   server.on("/startFan", HTTP_GET, []() {
     fanState = true; // Turn fan on
     digitalWrite(fanPin, HIGH);
@@ -157,6 +159,7 @@ void reconnect() {
 
 void loop() {
   unsigned long currentTime = millis();
+  server.handleClient();
   if (!client.connected()) reconnect();
   client.loop();
 
