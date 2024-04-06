@@ -84,6 +84,7 @@ void handleLDRRecords();
 void handleDataRequest();
 void loadConfiguration();
 void autoControlFan(bool forceAction, bool forceState, float currentTemperature);
+void sendData(float temperature, float humidity);
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
@@ -454,4 +455,12 @@ void autoControlFan(bool forceAction = false, bool forceState = false, float cur
     }
   }
   // Optionally, handle cases where manualOverride is true if needed
+}
+
+void sendData(float temperature, float humidity) {
+  if (deviceConfig.commMethod == "mqtt") {
+    // Code to publish data using MQTT
+  } else {
+    // Code to send data using HTTP POST
+  }
 }
