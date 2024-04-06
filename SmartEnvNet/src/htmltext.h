@@ -26,7 +26,11 @@ char page1[] PROGMEM = R"rawliteral(
       <li><a href="/temperature">Temperature Page</a></li>
       <li><a href="/config">Configuration Page</a></li>
   </ul>
-  <p>Sensor Value: <span id='sensor_value'>Loading...</span></p>
+  <h1>Sensor Readings</h1>
+  <p id="temperature">Current Temperature: --°C</p>
+  <p id="humidity">Current Humidity: --%</p>
+  <p id="lightIntensity">Current Light Intensity: --</p>
+  <br>
   <button class='start' onclick='startFan()'>Start AC Fan</button>
   <button class='stop' onclick='stopFan()'>Stop AC Fan</button>
   <button class='records' onclick='showLDRRecords()'>Show Last 25 LDR Records</button>
