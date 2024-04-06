@@ -97,26 +97,17 @@ const char page2[] PROGMEM = R"rawliteral(
     <script>
       function fetchData() {
         fetch('/data')
-          .then(response => response.text())
-          .then(text => {
-            const lines = text.trim().split('\n');
-            const data = lines.map(line => {
-              const [temperature, humidity] = line.split(',');
-              return { temperature, humidity };
-            });
-            const container = document.getElementById('dataContainer');
-            container.innerHTML = ''; // Clear previous content
-            data.forEach(record => {
-              const div = document.createElement('div');
-              div.textContent = `Temperature: ${record.temperature}, Humidity: ${record.humidity}`;
-              container.appendChild(div);
-            });
+          .then(response => response.json()) // Process the response as JSON
+          .then(data => {
+            document.getElementById('temperature').textContent = "Temperature: " + data.temperature + "°C";
+            document.getElementById('humidity').textContent = "Humidity: " + data.humidity + "%";
           })
           .catch(error => console.error('Error:', error));
       }
 
       document.addEventListener('DOMContentLoaded', function() {
-        fetchData(); // Fetch data when the page loads
+        fetchData();
+        setInterval(fetchData, 5000);
       });
     </script>
 </head>

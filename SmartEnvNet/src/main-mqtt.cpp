@@ -351,3 +351,31 @@ void handleLDRRecords() {
       Serial.println("WiFi Disconnected");
     }
 }
+
+void handleDataRequest() {
+  // Assuming you open the file and read data as before
+  File file = SPIFFS.open("/sensor_data.txt", FILE_READ);
+  if (!file) {
+    Serial.println("Failed to open file for reading");
+    server.send(500, "application/json", "{\"error\":\"Could not read data\"}");
+    return;
+  }
+
+  String lastLine;
+  while (file.available()) {
+    lastLine = file.readStringUntil('\n');
+  }
+  file.close();
+
+  // Split the lastLine into components and send as JSON
+  int firstCommaIndex = lastLine.indexOf(',');
+  int secondCommaIndex = lastLine.indexOf(',', firstCommaIndex + 1);
+
+  String temperature = lastLine.substring(0, firstCommaIndex);
+  String humidity = lastLine.substring(firstCommaIndex + 1, secondCommaIndex);
+  // Assuming you only want temperature and humidity for now
+  
+  String jsonResponse = "{\"temperature\":" + temperature + ",\"humidity\":" + humidity + "}";
+
+  server.send(200, "application/json", jsonResponse);
+}
