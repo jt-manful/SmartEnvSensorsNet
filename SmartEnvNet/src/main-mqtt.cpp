@@ -121,6 +121,7 @@ void setup() {
   server.on("/sensorValue", HTTP_GET, []() {
     handleSensorValues(globalTemperature, globalHumidity, globalLightIntensity);
   });
+  
   server.on("/startFan", HTTP_GET, []() {
     fanState = true; // Turn fan on
     digitalWrite(fanPin, HIGH);
