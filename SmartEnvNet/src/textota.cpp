@@ -8,9 +8,9 @@
 #include "textota.h"
 
 const char* host = "esp32";
-const char* ssid = "JOHN-2 9490";
-const char* password = "deeznuts";
-const char* serverName = "http://172.16.4.206/final_project/api.php";
+const char* ssid = "Tsatsu";
+const char* password = "tsatsu123";
+const char* serverName = "http://192.168.105.210/final_project/api.php";
 
 
 //set up access point
@@ -34,19 +34,12 @@ void setup(void) {
   Serial.begin(115200);
 //192.168.1.148
   setupWifi();
-  // /*use mdns for host name resolution*/
-  // if (!MDNS.begin(host)) { //http://esp32.local
-  //   Serial.println("Error setting up MDNS responder!");
-  //   while (1) {
-  //     delay(1000);
-  //   }
-  // }
-  // Serial.println("mDNS responder started");
-  /*return index page which is stored in serverIndex */
+  
+  WiFi.mode(WIFI_AP);
 
    WiFi.softAP(ssidAP, passwordAP);
-  WiFi.softAPConfig(local_ip, gateway, subnet);  // initialise Wi-Fi
-  server.begin();
+   WiFi.softAPConfig(local_ip, gateway, subnet);  // initialise Wi-Fi
+  
   
   server.on("/", HTTP_GET, []() {
     server.sendHeader("Connection", "close");
