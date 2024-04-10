@@ -130,6 +130,7 @@ void setup() {
   server.on("/config", HTTP_GET, handleConfigPage);
   server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
   server.on("/getLDRRecords", HTTP_GET, handleLDRRecords);
+  server.on("/data", HTTP_GET, handleDataRequest);
   server.on("/sensorValue", HTTP_GET, []() {
     handleSensorValues(globalTemperature, globalHumidity, globalLightIntensity);
   });
@@ -202,20 +203,20 @@ void loop() {
 
   // Read and display temperature and light intensity every 6 seconds
   if (currentTime - lastTemperatureAndLightReadTime >= 6000) {
-    float temperature = dht.readTemperature();
-    int lightIntensity = analogRead(ldrPin);
+    globalTemperature = dht.readTemperature();
+    globalLightIntensity = analogRead(ldrPin);
     lastTemperatureAndLightReadTime = currentTime;
 
     // Display temperature
     lcd.setCursor(0, 0);
     lcd.print("Temp: ");
-    lcd.print(temperature);
+    lcd.print(globalTemperature);
     lcd.print("C   ");
 
     // Display light intensity
     lcd.setCursor(0, 1);
     lcd.print("Light: ");
-    lcd.print(lightIntensity);
+    lcd.print(globalLightIntensity);
     lcd.print("   ");
   }
 
@@ -224,19 +225,19 @@ void loop() {
     lastSaveTime = currentTime;
     
     // Construct the data string to save
-    float humidity = dht.readHumidity();
-    float temperature = dht.readTemperature();
-    int lightIntensity = analogRead(ldrPin);
-    String dataString =  String(temperature) + "," +   String(humidity) + "," +  String(lightIntensity) +  "\n";
+    float globalHumidity = dht.readHumidity();
+    float globalTemperature = dht.readTemperature();
+    int globalLightIntensity = analogRead(ldrPin);
+    String dataString =  String(globalTemperature) + "," +   String(globalHumidity) + "," +  String(globalLightIntensity) +  "\n";
 
-    String dataStringTemp = String(NodeID) + "," + String(temperature);
-    String dataStringHum = String(NodeID) + "," + String(humidity);
-    String dataStringLDR = String(NodeID) + "," + String(lightIntensity);
+    String dataStringTemp = String(NodeID) + "," + String(globalTemperature);
+    String dataStringHum = String(NodeID) + "," + String(globalHumidity);
+    String dataStringLDR = String(NodeID) + "," + String(globalLightIntensity);
 
-    handleSensorValues(temperature, humidity, lightIntensity);
+    handleSensorValues(globalTemperature, globalHumidity, globalLightIntensity);
 
     if(!deviceConfig.manualOverride){
-      autoControlFan(false, false, temperature);
+      autoControlFan(false, false, globalTemperature);
     }
 
     delay(1000);
@@ -303,8 +304,15 @@ void publishMessage(const char* topic, String payload , boolean retained){
 
 void handleRoot() {
   // Example of dynamically replacing placeholders in your page
-  String fullPage = String(page1); // Assuming `page` is your main page's HTML content
-  // fullPage.replace("<!--PLACEHOLDER-->", "Actual Value");
+  String fullPage = String(page1);
+  float temperature = globalTemperature;
+  float humidity = globalHumidity;
+  int lightIntensity = globalLightIntensity;
+
+  fullPage.replace("<!--TEMP_PLACEHOLDER-->", String(temperature));
+  fullPage.replace("<!--HUMIDITY_PLACEHOLDER-->", String(humidity));
+  fullPage.replace("<!--LIGHT_PLACEHOLDER-->", String(lightIntensity));
+
   server.send(200, "text/html", fullPage.c_str());
 }
 
@@ -436,6 +444,7 @@ void handleDataRequest() {
   // Assuming you only want temperature and humidity for now
   
   String jsonResponse = "{\"temperature\":" + temperature + ",\"humidity\":" + humidity + "}";
+  Serial.println("page2: " + temperature + " " + humidity + "\n");
 
   server.send(200, "application/json", jsonResponse);
 }
