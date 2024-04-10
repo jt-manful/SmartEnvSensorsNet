@@ -24,6 +24,8 @@ DHT dht(DHTPIN, DHTTYPE);
 const int ldrPin = 33; 
 const int fanPin = 19;
 bool fanState = false;
+bool forceAction = false;
+bool forceState = false;
 
 float globalTemperature;
 float globalHumidity;
@@ -48,7 +50,7 @@ IPAddress gateway(192, 168, 2, 1);
 IPAddress subnet(255, 255, 255, 0);
 
 // Update MQTT broker details with your local MQTT server
-const char* mqtt_server = "172.16.3.44"; 
+const char* mqtt_server = "172.16.4.206"; 
 const int mqtt_port =1883;
 const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
@@ -138,7 +140,7 @@ void setup() {
     digitalWrite(fanPin, HIGH);
     server.send(200, "text/plain", "Fan started");
   } else {
-    autoControlFan(true);
+    autoControlFan(forceAction=true, forceState=true, globalTemperature);
     server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode.");
   }
   });
@@ -149,7 +151,7 @@ void setup() {
       digitalWrite(fanPin, LOW);
       server.send(200, "text/plain", "Fan stopped");
     } else {
-      autoControlFan(false);
+      autoControlFan(forceAction=false, forceState=false, globalTemperature);
       server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode.");
     }
   });
@@ -377,7 +379,7 @@ void handleSensorValues(float temperature, float humidity, int lightIntensity) {
 }
 
 void handleLDRRecords() {
-  String baseEndpoint = "http://172.16.3.44/final_project/viewldr25.php?NodeName=";
+  String baseEndpoint = "http://172.16.4.206/final_project/viewldr25.php?NodeName=";
   String lastEndpointCStr = baseEndpoint + DEVICE_ID;
 
   const char* lastEndpoint = lastEndpointCStr.c_str();
@@ -438,7 +440,7 @@ void handleDataRequest() {
   server.send(200, "application/json", jsonResponse);
 }
 
-void autoControlFan(bool forceAction = false, bool forceState = false, float currentTemperature){
+void autoControlFan(bool forceAction, bool forceState, float currentTemperature){
 
   if (!deviceConfig.manualOverride) {
     if (currentTemperature >= deviceConfig.triggerTemp || forceAction && forceState) {
