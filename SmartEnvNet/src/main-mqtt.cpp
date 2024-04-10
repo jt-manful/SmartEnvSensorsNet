@@ -136,30 +136,37 @@ void setup() {
   });
   
   server.on("/startFan", HTTP_GET, []() {
-  if (deviceConfig.manualOverride) {
-    fanState = true; // Turn fan on
-    digitalWrite(fanPin, HIGH);
-    server.send(200, "text/plain", "Fan started");
-  } else {
-    autoControlFan(forceAction=true, forceState=true, globalTemperature);
-    server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode.");
-  }
+    if (deviceConfig.manualOverride) {
+      if (!fanState) { // Check if the fan is not already on
+        fanState = true;
+        digitalWrite(fanPin, HIGH);
+        server.send(200, "text/plain", "Fan started. Manual mode activated.");
+      } else {
+        server.send(200, "text/plain", "Fan is already on.");
+      }
+    } else {
+      autoControlFan(true, true, globalTemperature);
+      server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode. Conditions checked.");
+    }
   });
 
   server.on("/stopFan", HTTP_GET, []() {
     if (deviceConfig.manualOverride) {
-      fanState = false; // Turn fan off
-      digitalWrite(fanPin, LOW);
-      server.send(200, "text/plain", "Fan stopped");
+      if (fanState) { // Check if the fan is currently on
+        fanState = false;
+        digitalWrite(fanPin, LOW);
+        server.send(200, "text/plain", "Fan stopped. Manual mode activated.");
+      } else {
+        server.send(200, "text/plain", "Fan is already off.");
+      }
     } else {
-      autoControlFan(forceAction=false, forceState=false, globalTemperature);
-      server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode.");
+      autoControlFan(true, false, globalTemperature);
+      server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode. Conditions checked.");
     }
   });
 }
 
 void reconnect() {
-  // Loop until we're reconnected
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     String clientId = "ESP32Client-";   // Create a random client ID
@@ -343,12 +350,11 @@ void handleUpdateConfig() {
     server.send(500, "text/plain", "Failed to open config file for writing");
     return;
   }
-
   serializeJson(doc, file);
   file.close();
-
+  
   server.send(200, "text/plain", "Configuration Updated");
-  loadConfiguration();
+  loadConfiguration(); // Make sure to reload the configuration after update
 }
 
 void loadConfiguration() {

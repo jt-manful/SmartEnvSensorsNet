@@ -127,10 +127,39 @@ const char page3[] PROGMEM = R"rawliteral(
 <html>
 <head>
   <title>Device Configuration</title>
+  <script>
+    function submitConfig() {
+      // Prevent the default form submission
+      event.preventDefault();
+
+      // Collect form data
+      const formData = {
+        deviceId: document.getElementById('deviceId').value,
+        commMethod: document.getElementById('commMethod').value,
+        manualOverride: document.getElementById('manualOverride').checked,
+        triggerTemp: document.getElementById('triggerTemp').value
+      };
+
+      // Send form data as JSON via Fetch API
+      fetch('/updateConfig', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.text();
+      })
+      .then(data => alert('Configuration Updated Successfully!'))
+      .catch(error => console.error('Error:', error));
+    }
+  </script>
 </head>
 <body>
   <h1>Device Configuration</h1>
-  <form action="/updateConfig" method="POST">
+  <form id="configForm">
     <label for="deviceId">Device ID/Name:</label><br>
     <input type="text" id="deviceId" name="deviceId"><br>
     
@@ -146,7 +175,7 @@ const char page3[] PROGMEM = R"rawliteral(
     <label for="triggerTemp">Trigger Temperature:</label><br>
     <input type="number" id="triggerTemp" name="triggerTemp"><br>
     
-    <input type="submit" value="Submit">
+    <button type="button" onclick="submitConfig()">Submit</button>
   </form>
 </body>
 </html>
