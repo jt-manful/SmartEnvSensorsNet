@@ -40,8 +40,8 @@ unsigned long lastHumidityReadTime = 0;
 unsigned long lastTemperatureAndLightReadTime = 0;
 unsigned long lastSaveTime = 0;
 
-const char* ssid = "JOHN-2 9490";
-const char* password = "deeznuts";
+const char* ssid = "Tsatsu";
+const char* password = "tsatsu123";
 
 char ssidAP[] = "johntsatsu";
 char passwordAP[] = "qwerty123";
@@ -50,7 +50,7 @@ IPAddress gateway(192, 168, 2, 1);
 IPAddress subnet(255, 255, 255, 0);
 
 // Update MQTT broker details with your local MQTT server
-const char* mqtt_server = "172.16.4.206"; 
+const char* mqtt_server = "192.168.104.157"; 
 const int mqtt_port =1883;
 const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
@@ -186,13 +186,13 @@ void loop() {
 
   // Read and display humidity every 3 seconds
   if (currentTime - lastHumidityReadTime >= 3000) {
-    float humidity = dht.readHumidity();
+    globalHumidity = dht.readHumidity();
     lastHumidityReadTime = currentTime;
 
     // Display humidity
     lcd.setCursor(0, 0);
     lcd.print("Humidity: ");
-    lcd.print(humidity);
+    lcd.print(globalHumidity);
     lcd.print("%   ");
 
     lcd.setCursor(0, 1);
@@ -305,13 +305,13 @@ void publishMessage(const char* topic, String payload , boolean retained){
 void handleRoot() {
   // Example of dynamically replacing placeholders in your page
   String fullPage = String(page1);
-  float temperature = globalTemperature;
-  float humidity = globalHumidity;
-  int lightIntensity = globalLightIntensity;
+  // float temperature = globalTemperature;
+  // float humidity = globalHumidity;
+  // int lightIntensity = globalLightIntensity;
 
-  fullPage.replace("<!--TEMP_PLACEHOLDER-->", String(temperature));
-  fullPage.replace("<!--HUMIDITY_PLACEHOLDER-->", String(humidity));
-  fullPage.replace("<!--LIGHT_PLACEHOLDER-->", String(lightIntensity));
+  // fullPage.replace("<!--TEMP_PLACEHOLDER-->", String(temperature));
+  // fullPage.replace("<!--HUMIDITY_PLACEHOLDER-->", String(humidity));
+  // fullPage.replace("<!--LIGHT_PLACEHOLDER-->", String(lightIntensity));
 
   server.send(200, "text/html", fullPage.c_str());
 }
@@ -387,7 +387,7 @@ void handleSensorValues(float temperature, float humidity, int lightIntensity) {
 }
 
 void handleLDRRecords() {
-  String baseEndpoint = "http://172.16.4.206/final_project/viewldr25.php?NodeName=";
+  String baseEndpoint = "http://192.168.104.157/final_project/viewldr25.php?NodeName=";
   String lastEndpointCStr = baseEndpoint + DEVICE_ID;
 
   const char* lastEndpoint = lastEndpointCStr.c_str();

@@ -27,9 +27,9 @@ char page1[] PROGMEM = R"rawliteral(
       <li><a href="/config">Configuration Page</a></li>
   </ul>
   <h1>Sensor Readings</h1>
-  <p id="temperature">Current Temperature: <!--TEMP_PLACEHOLDER-->Deg Celsius</p>
-  <p id="humidity">Current Humidity: <!--HUMIDITY_PLACEHOLDER-->%</p>
-  <p id="lightIntensity">Current Light Intensity: <!--LIGHT_PLACEHOLDER--></p>
+  <p id="temperature">Current Temperature: --Deg Celsius</p>
+  <p id="humidity">Current Humidity: --%</p>
+  <p id="lightIntensity">Current Light Intensity: --</p>
   <br>
   <button class='start' onclick='startFan()'>Start AC Fan</button>
   <button class='stop' onclick='stopFan()'>Stop AC Fan</button>
@@ -72,7 +72,7 @@ char page1[] PROGMEM = R"rawliteral(
         xhttp.onreadystatechange = function() {
           if (this.readyState == 4 && this.status == 200) {
             var data = JSON.parse(this.responseText);
-            document.getElementById('temperature').innerHTML = "Current Temperature: " + data.temperature + "°C";
+            document.getElementById('temperature').innerHTML = "Current Temperature: " + data.temperature + " Degree Celsius";
             document.getElementById('humidity').innerHTML = "Current Humidity: " + data.humidity + "%";
             document.getElementById('lightIntensity').innerHTML = "Current Light Intensity: " + data.lightIntensity;
           }
@@ -99,7 +99,7 @@ const char page2[] PROGMEM = R"rawliteral(
         fetch('/data')
           .then(response => response.json()) // Process the response as JSON
           .then(data => {
-            document.getElementById('temperature').textContent = "Temperature: " + data.temperature + "°C";
+            document.getElementById('temperature').textContent = "Temperature: " + data.temperature + " Degree Celsius";
             document.getElementById('humidity').textContent = "Humidity: " + data.humidity + "%";
           })
           .catch(error => console.error('Error:', error));
