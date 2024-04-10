@@ -10,8 +10,18 @@
 const char* host = "esp32";
 const char* ssid = "JOHN-2 9490";
 const char* password = "deeznuts";
+const char* serverName = "http://172.16.4.206/final_project/api.php";
 
+
+//set up access point
 WebServer server(80);
+char ssidAP[] = "JohnM";
+char passwordAP[] = "qwerty123";
+IPAddress local_ip(192, 168, 2, 1);
+IPAddress gateway(192, 168, 2, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+
 void setupWifi();
 void handleRoot();
 void handleTemperaturePage();
@@ -24,15 +34,20 @@ void setup(void) {
   Serial.begin(115200);
 //192.168.1.148
   setupWifi();
-  /*use mdns for host name resolution*/
-  if (!MDNS.begin(host)) { //http://esp32.local
-    Serial.println("Error setting up MDNS responder!");
-    while (1) {
-      delay(1000);
-    }
-  }
-  Serial.println("mDNS responder started");
+  // /*use mdns for host name resolution*/
+  // if (!MDNS.begin(host)) { //http://esp32.local
+  //   Serial.println("Error setting up MDNS responder!");
+  //   while (1) {
+  //     delay(1000);
+  //   }
+  // }
+  // Serial.println("mDNS responder started");
   /*return index page which is stored in serverIndex */
+
+   WiFi.softAP(ssidAP, passwordAP);
+  WiFi.softAPConfig(local_ip, gateway, subnet);  // initialise Wi-Fi
+  server.begin();
+  
   server.on("/", HTTP_GET, []() {
     server.sendHeader("Connection", "close");
     server.send(200, "text/html", loginIndex);

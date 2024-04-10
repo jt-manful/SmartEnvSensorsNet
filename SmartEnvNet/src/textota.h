@@ -21,6 +21,12 @@ char page1[] PROGMEM = R"rawliteral(
 </head>
 <body>
   <h1>ESP32 AC Fan & LDR Sensor Control</h1>
+  
+<nav id ="navbar">
+  <a class = "nav-link" href ="/temperature"> Temerature </a>
+  <a class = "nav-link" href="/config"> Config </a>
+  <a class = "nav-link" href="/serverIndex"> Upload </a>
+</nav>
   <p>Sensor Value: <span id='sensor_value'>Loading...</span></p>
   <button class='start' onclick='startFan()'>Start AC Fan</button>
   <button class='stop' onclick='stopFan()'>Stop AC Fan</button>
@@ -110,6 +116,11 @@ const char page2[] PROGMEM = R"rawliteral(
 </head>
 <body>
     <h1>Temperature & Humidity Data</h1>
+    <nav id ="navbar">
+  <a class = "nav-link" href ="/homepage"> HomePage </a>
+  <a class = "nav-link" href="/config"> Config </a>
+  <a class = "nav-link" href="/serverIndex"> Upload </a>
+</nav>
     <div id="dataContainer">Loading data...</div>
 </body>
 </html>
@@ -123,7 +134,11 @@ const char page3[] PROGMEM = R"rawliteral(
     <title>Device Configuration</title>
 </head>
 <body>
-    <h1>Device Configuration</h1>
+    <h1>Device Configuration</h1>#<nav id ="navbar">
+  <a class = "nav-link" href ="/homepage"> Homepage </a>
+  <a class = "nav-link" href="/temperature"> temperature </a>
+  <a class = "nav-link" href="/serverIndex"> Upload </a>
+</nav>
     <form id="configForm">
         <label for="deviceId">Device ID/Name:</label><br>
         <input type="text" id="deviceId" name="deviceId"><br>
@@ -221,6 +236,9 @@ const char loginIndex[] PROGMEM = R"rawliteral(
 
 const char* serverIndex PROGMEM = R"rawliteral(
 <script src=https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js></script>
+ <a class = "nav-link" href ="/homepage"> Homepage </a>
+  <a class = "nav-link" href="/temperature"> temperature </a>
+  <a class = "nav-link" href="/config"> Config </a>
 <form method=POST action=# enctype=multipart/form-data id=upload_form>
    <input type=file name=update>
         <input type=submit value=Update>
@@ -254,5 +272,5 @@ const char* serverIndex PROGMEM = R"rawliteral(
  }
  });
  });
- </script>;
+ </script>
 )rawliteral";
