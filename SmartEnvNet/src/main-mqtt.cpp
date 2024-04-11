@@ -562,7 +562,7 @@ void handleUpdateDeviceId() {
   http.addHeader("Content-Type", "application/json");
 
   
-  String jsonPayload = "{\"NodeName\": \"" + String(DEVICE_ID) + "\", \"NewNodeName\": \"" + deviceConfig.deviceId + "\"}";
+  String jsonPayload = "{\"NodeID\": \"" + String(DEVICE_ID) + "\", \"NewNodeName\": \"" + deviceConfig.deviceId + "\"}";
   int httpCode = http.PUT(jsonPayload);
 
   if (httpCode > 0) {
