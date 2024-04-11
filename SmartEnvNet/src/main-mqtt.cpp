@@ -87,6 +87,7 @@ void handleDataRequest();
 void loadConfiguration();
 void autoControlFan(float currentTemperature);
 void sendData(float temperature, float humidity);
+void handleUpdateDeviceId();
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
@@ -129,6 +130,7 @@ void setup() {
   server.on("/temperature", HTTP_GET, handleTemperaturePage);
   server.on("/config", HTTP_GET, handleConfigPage);
   server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
+  server.on("/updateDeviceId", HTTP_POST, handleUpdateDeviceId);
   server.on("/getLDRRecords", HTTP_GET, handleLDRRecords);
   server.on("/data", HTTP_GET, handleDataRequest);
   server.on("/sensorValue", HTTP_GET, []() {
@@ -272,7 +274,6 @@ void loop() {
       Serial.println("Write failed");
     }
 
-    // Always close the file when you're done with it
     file.close();
   }
 
@@ -309,20 +310,11 @@ void connectToWifi(){
 
 void publishMessage(const char* topic, String payload , boolean retained){
   if (client.publish(topic, payload.c_str(), true))
-      Serial.println("Message publised ["+String(topic)+"]: "+payload);
+      Serial.println("Message published ["+String(topic)+"]: "+payload);
 }
 
 void handleRoot() {
-  // Example of dynamically replacing placeholders in your page
   String fullPage = String(page1);
-  // float temperature = globalTemperature;
-  // float humidity = globalHumidity;
-  // int lightIntensity = globalLightIntensity;
-
-  // fullPage.replace("<!--TEMP_PLACEHOLDER-->", String(temperature));
-  // fullPage.replace("<!--HUMIDITY_PLACEHOLDER-->", String(humidity));
-  // fullPage.replace("<!--LIGHT_PLACEHOLDER-->", String(lightIntensity));
-
   server.send(200, "text/html", fullPage.c_str());
 }
 
@@ -335,7 +327,7 @@ void handleConfigPage() {
 }
 
 void handleUpdateConfig() {
-  Serial.println("Reached here 1");
+  // Serial.println("Reached here 1");
   if (!server.hasArg("plain")) {
     server.send(400, "text/plain", "Bad Request");
     return;
@@ -358,7 +350,8 @@ void handleUpdateConfig() {
   file.close();
 
   server.send(200, "text/plain", "Configuration Updated");
-  loadConfiguration(); // Make sure to reload the configuration after update
+  loadConfiguration();
+  handleUpdateDeviceId(); //change device id in db
   Serial.println("value");
   Serial.println(deviceConfig.deviceId+ " , "+deviceConfig.commMethod+ " , "+deviceConfig.manualOverride);
   
@@ -481,4 +474,31 @@ void sendData(float temperature, float humidity) {
   } else {
     // Code to send data using HTTP POST
   }
+}
+
+void handleUpdateDeviceId() {
+  const char* apiEndpoint = "http://192.168.137.41/final_project/api.php";
+  if(WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi is not connected. Cannot send device ID.");
+    return;
+  }
+
+  HTTPClient http;
+  http.begin(apiEndpoint);
+  http.addHeader("Content-Type", "application/json");
+
+  
+  String jsonPayload = "{\"NodeName\": \"" + String(DEVICE_ID) + "\", \"NewNodeName\": \"" + deviceConfig.deviceId + "\"}";
+  int httpCode = http.PUT(jsonPayload);
+
+  if (httpCode > 0) {
+    Serial.printf("Response code: %d\n", httpCode);
+
+    String payload = http.getString();
+    Serial.println("Received payload: " + payload);
+  } else {
+    Serial.printf("Error sending POST request: %s\n", http.errorToString(httpCode).c_str());
+  }
+
+  http.end();
 }

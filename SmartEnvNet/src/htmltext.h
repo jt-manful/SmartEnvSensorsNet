@@ -146,6 +146,19 @@ const char page3[] PROGMEM = R"rawliteral(
         }
         return response.text();
       })
+      .then(() => {
+        return fetch('/updateDeviceId', { // Use the correct endpoint for updating deviceId
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId: formData.deviceId })
+        });
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to update deviceId in the database');
+        }
+        return response.text();
+      })
       .then(data => alert('Configuration Updated Successfully!'))
       .catch(error => console.error('Error:', error));
     }
