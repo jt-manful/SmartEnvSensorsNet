@@ -54,13 +54,7 @@ char page1[] PROGMEM = R"rawliteral(
       var xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
-          var records = JSON.parse(this.responseText);
-          var html = '<table class="record-table"><tr><th>Timestamp</th><th>LDR Value</th></tr>';
-          records.forEach(function(record) {
-            html += '<tr><td>' + record.Timestamp + '</td><td>' + record.value + '</td></tr>';
-          });
-          html += '</table>';
-          document.getElementById('ldr_records').innerHTML = html;
+          document.getElementById('ldr_records').innerHTML = this.responseText;
         }
       };
       xhttp.open('GET', '/getLDRRecords', true);
