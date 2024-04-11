@@ -467,7 +467,7 @@ void handleSensorValues(float temperature, float humidity, int lightIntensity) {
 }
 
 void handleLDRRecords() {
-  String baseEndpoint = "http://192.168.137.41/final_project/viewldr25.php?NodeName=";
+  String baseEndpoint = "http://192.168.137.41/final_project/viewldr25.php?NodeID=";
   String lastEndpointCStr = baseEndpoint + DEVICE_ID;
 
   const char* lastEndpoint = lastEndpointCStr.c_str();
