@@ -51,7 +51,7 @@ unsigned long lastSaveTime = 0;
 
 const char* ssid = "Tsatsu";
 const char* password = "tsatsu123";
-const char* serverName = "http://172.16.3.44/final_project/api.php";
+const char* serverName = "http://192.168.137.41/final_project/api.php";
 
 WebServer server(80);
 char ssidAP[] = "johntsatsu";
@@ -104,6 +104,8 @@ void loadConfiguration();
 void autoControlFan(float currentTemperature);
 void sendData(float temperature, float humidity);
 void handleUpdateDeviceId();
+void sendDataHum();
+void sendDataTempxLDR();
 void mqttPostingHum();
 void mqttPostingTempXLDR();
 
