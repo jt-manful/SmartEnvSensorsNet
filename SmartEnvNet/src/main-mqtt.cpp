@@ -197,7 +197,7 @@ void mqttPostingTempXLDR();
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
   for (int i = 0; i < length; i++) incommingMessage+=(char)payload[i];
-  
+
   Serial.println("Message arrived ["+String(topic)+"]"+incommingMessage);
  
 }
@@ -223,15 +223,17 @@ void setup() {
   pinMode(ledPin, OUTPUT);
 
 
+ 
+  
   connectToWifi();
-/*use mdns for host name resolution*/
+  /*use mdns for host name resolution*/
   if (!MDNS.begin(host)) { //http://esp32.local
     Serial.println("Error setting up MDNS responder!");
     while (1) {
       delay(1000);
     }
   }
-  
+
   server.on("/login", HTTP_GET, []() {
     server.sendHeader("Connection", "close");
     server.send(200, "text/html", loginIndex);
@@ -268,14 +270,14 @@ void setup() {
       }
     }
   });
-  
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(ssidAP, passwordAP);
-  WiFi.softAPConfig(local_ip, gateway, subnet);
-  
+ 
+
   connectMQTTBroker(); 
   client.setCallback(callback);
 
+  
+  
+  
 
   server.on("/", HTTP_GET, handleRoot);
   server.on("/temperature", HTTP_GET, handleTemperaturePage);
@@ -324,9 +326,7 @@ void setup() {
     
   });
 
-
   server.begin();
-
 }
 
 void reconnect() {
