@@ -8,19 +8,19 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 
-// // DHT sensor setup
-// #define DHTPIN 18  
-// #define DHTTYPE DHT22 
-// DHT dht(DHTPIN, DHTTYPE);
+// DHT sensor setup
+#define DHTPIN 18  
+#define DHTTYPE DHT22 
+DHT dht(DHTPIN, DHTTYPE);
 
-// // LDR setup
-// const int ldrPin = 33; 
+// LDR setup
+const int ldrPin = 33; 
 
 //LED setup
 const int ledPin = 13;
 
-// // LCD setup
-// LiquidCrystal_I2C lcd(0x27, 20, 4); 
+// LCD setup
+LiquidCrystal_I2C lcd(0x27, 20, 4); 
 
 // Timing variables
 unsigned long lastHumidityReadTime = 0;
