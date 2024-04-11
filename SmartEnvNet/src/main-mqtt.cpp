@@ -13,12 +13,20 @@
 #include <WiFiClientSecure.h>
 #include <WebServer.h>
 #include <ArduinoJson.h>
+#include <ArduinoOTA.h>
+#include <ESPmDNS.h>
+#include <WiFiUdp.h>
 #include "htmltext.h"
 
 // DHT sensor setup
 #define DHTPIN 18  
 #define DHTTYPE DHT22 
 DHT dht(DHTPIN, DHTTYPE);
+
+//sensor IDs
+const int LEDTypeID = 1;
+const int  HumTypeID =  3;
+const int  TempTypeID = 2;
 
 // LDR setup
 const int ldrPin = 33; 
@@ -34,7 +42,6 @@ int globalLightIntensity;
 
 // LCD setup
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
-WebServer server(80);
 
 // Timing variables
 unsigned long lastHumidityReadTime = 0;
@@ -43,7 +50,9 @@ unsigned long lastSaveTime = 0;
 
 const char* ssid = "Tsatsu";
 const char* password = "tsatsu123";
+const char* serverName = "http://172.16.3.44/final_project/api.php";
 
+WebServer server(80);
 char ssidAP[] = "johntsatsu";
 char passwordAP[] = "qwerty123";
 IPAddress local_ip(192, 168, 2, 1);
@@ -69,12 +78,12 @@ char msg[MSG_BUFFER_SIZE];
 
 struct DeviceConfig {
   String deviceId;
-  String commMethod;
-  int manualOverride;
+  String commMethod = "http";
+  int manualOverride = 0;
   float triggerTemp;
 } deviceConfig;
 
-
+// LED interval for blinking (in milliseconds)
 const unsigned long blinkInterval = 2000; // 2 seconds
 unsigned long previousMillis = 0;
 
@@ -94,6 +103,8 @@ void loadConfiguration();
 void autoControlFan(float currentTemperature);
 void sendData(float temperature, float humidity);
 void handleUpdateDeviceId();
+void mqttPostingHum();
+void mqttPostingTempXLDR();
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
@@ -196,8 +207,11 @@ void reconnect() {
 void loop() {
   unsigned long currentTime = millis();
   server.handleClient();
-
   blinkLED();
+
+ 
+
+
 
   if (!client.connected()) reconnect();
   client.loop();
@@ -210,6 +224,18 @@ void loop() {
   if (currentTime - lastHumidityReadTime >= 3000) {
     globalHumidity = dht.readHumidity();
     lastHumidityReadTime = currentTime;
+     // http x mqtt 
+  if (deviceConfig.commMethod == "http"){
+    sendDataHum();
+  }
+  else if (deviceConfig.commMethod == "mqtt"){
+    mqttPostingHum();
+  }
+  else{
+    sendDataHum();
+
+  }
+
 
     // Display humidity
     lcd.setCursor(0, 0);
@@ -228,6 +254,18 @@ void loop() {
     globalTemperature = dht.readTemperature();
     globalLightIntensity = analogRead(ldrPin);
     lastTemperatureAndLightReadTime = currentTime;
+
+     // http x mqtt 
+    if (deviceConfig.commMethod == "http"){
+      sendDataTempxLDR();
+    }
+    else if (deviceConfig.commMethod == "mqtt"){
+      mqttPostingTempXLDR();
+    }
+    else{
+      sendDataTempxLDR();
+
+    }
 
     // Display temperature
     lcd.setCursor(0, 0);
@@ -250,27 +288,10 @@ void loop() {
   if (currentTime - lastSaveTime >= 10000) {
     lastSaveTime = currentTime;
     
-    // Construct the data string to save
-    float globalHumidity = dht.readHumidity();
-    float globalTemperature = dht.readTemperature();
-    int globalLightIntensity = analogRead(ldrPin);
     String dataString =  String(globalTemperature) + "," +   String(globalHumidity) + "," +  String(globalLightIntensity) +  "\n";
-
-    String dataStringTemp = String(NodeID) + "," + String(globalTemperature);
-    String dataStringHum = String(NodeID) + "," + String(globalHumidity);
-    String dataStringLDR = String(NodeID) + "," + String(globalLightIntensity);
 
     handleSensorValues(globalTemperature, globalHumidity, globalLightIntensity);
 
-   
-
-    delay(1000);
-
-    // Publish temperature value to the specified topic
-      publishMessage(topic1,dataStringTemp,true);  
-      publishMessage(topic2,dataStringHum,true);  
-      publishMessage(topic3,dataStringLDR,true);    
-    
     delay(2000);
     
     // Open file for appending
@@ -311,10 +332,21 @@ void connectMQTTBroker(){
 
 void connectToWifi(){
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED){
+  Serial.println("Connecting");
+
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 10) {
     delay(500);
-    Serial.println("Connecting to WiFi...");
+    Serial.print(".");
+    attempts++;
   }
+
+  // Wait for connection
+  while(WiFi.status() != WL_CONNECTED) {
+    Serial.println("Failed to connect to WiFi. Please check your credentials");
+
+  }
+
   Serial.println("");
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
@@ -527,4 +559,74 @@ void blinkLED() {
       digitalWrite(ledPin, LOW);
     }
   }
+}
+
+// http functions
+void sendDataTempxLDR() {
+
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, serverName);
+    http.addHeader("Content-Type", "application/json");
+    String temp_json = "{\"NodeID\":\"" + String(NodeID)+ "\",\"TypeID\":\"" + String(TempTypeID) + "\",\"Value\":\"" + String(globalTemperature) + "\"}";
+    String ldr_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"TypeID\":\"" + String(LEDTypeID) + "\",\"Value\":\"" + String(globalLightIntensity) + "\"}";
+
+    Serial.println("jsons: ");
+    Serial.println(temp_json);
+    Serial.println(ldr_json);
+
+    int httpResponseCode = http.POST(temp_json);
+    Serial.print("HTTP Response code (temp): ");
+    Serial.println(httpResponseCode);
+
+    httpResponseCode = http.POST(ldr_json);
+    Serial.print("HTTP Response code (DHT): ");
+    Serial.println(httpResponseCode);
+    http.end(); // Free resources
+
+  } else {
+    connectToWifi();
+  }
+}
+
+
+void sendDataHum() {
+
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, serverName);
+    http.addHeader("Content-Type", "application/json");
+    String hum_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"TypeID\":\"" + String(HumTypeID) + "\",\"Value\":\"" + String(globalHumidity) + "\"}";
+
+    Serial.println("jsons: ");
+    Serial.println(hum_json);
+
+
+    int httpResponseCode = http.POST(hum_json);
+    Serial.print("HTTP Response code (hum): ");
+    Serial.println(httpResponseCode);
+    
+    http.end(); // Free resources
+
+  } else {
+    connectToWifi();
+  }
+}
+
+void mqttPostingHum(){
+  String dataStringHum = String(NodeID) + "," + String(globalHumidity);
+
+  // Publish temperature value to the specified topic
+  publishMessage(topic2,dataStringHum,true);
+}
+
+void mqttPostingTempXLDR(){
+  String dataStringTemp = String(NodeID) + "," + String(globalTemperature);
+  String dataStringLDR = String(NodeID) + "," + String(globalLightIntensity);
+
+  publishMessage(topic3,dataStringLDR,true);  
+  publishMessage(topic1,dataStringTemp,true);  
+
 }
