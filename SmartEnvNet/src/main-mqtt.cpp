@@ -50,7 +50,7 @@ IPAddress gateway(192, 168, 2, 1);
 IPAddress subnet(255, 255, 255, 0);
 
 // Update MQTT broker details with your local MQTT server
-const char* mqtt_server = "192.168.104.157"; 
+const char* mqtt_server = "192.168.137.41"; 
 const int mqtt_port =1883;
 const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
@@ -69,8 +69,8 @@ char msg[MSG_BUFFER_SIZE];
 struct DeviceConfig {
   String deviceId;
   String commMethod;
-  bool manualOverride;
-  int triggerTemp;
+  int manualOverride;
+  float triggerTemp;
 } deviceConfig;
 
 void publishMessage(const char* topic, String payload , boolean retained);
@@ -85,7 +85,7 @@ void handleSensorValues(float globalTemperature, float globalHumidity, int globa
 void handleLDRRecords();
 void handleDataRequest();
 void loadConfiguration();
-void autoControlFan(bool forceAction, bool forceState, float currentTemperature);
+void autoControlFan(float currentTemperature);
 void sendData(float temperature, float humidity);
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -136,33 +136,30 @@ void setup() {
   });
   
   server.on("/startFan", HTTP_GET, []() {
-    if (deviceConfig.manualOverride) {
-      if (!fanState) { // Check if the fan is not already on
+      Serial.println("Reached here 1");
+
+    if (deviceConfig.manualOverride == 0) {
+      Serial.println("auto reached");
         fanState = true;
         digitalWrite(fanPin, HIGH);
         server.send(200, "text/plain", "Fan started. Manual mode activated.");
-      } else {
-        server.send(200, "text/plain", "Fan is already on.");
-      }
-    } else {
-      autoControlFan(true, true, globalTemperature);
-      server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode. Conditions checked.");
-    }
+        Serial.println("MAN FAN OFF");
+      
+    } 
   });
 
   server.on("/stopFan", HTTP_GET, []() {
-    if (deviceConfig.manualOverride) {
-      if (fanState) { // Check if the fan is currently on
+      Serial.println("Reached here 3");
+
+    if (deviceConfig.manualOverride == 0) {
+        Serial.println("Reached here 4");
+
         fanState = false;
         digitalWrite(fanPin, LOW);
         server.send(200, "text/plain", "Fan stopped. Manual mode activated.");
-      } else {
-        server.send(200, "text/plain", "Fan is already off.");
-      }
-    } else {
-      autoControlFan(true, false, globalTemperature);
-      server.send(200, "text/plain", "Manual control is disabled. Operating in auto mode. Conditions checked.");
-    }
+        Serial.println("MAN FAN OFF");
+      } 
+    
   });
 }
 
@@ -191,6 +188,10 @@ void loop() {
   if (!client.connected()) reconnect();
   client.loop();
 
+
+ if(deviceConfig.manualOverride == 1){ 
+      autoControlFan(globalTemperature);
+    }
   // Read and display humidity every 3 seconds
   if (currentTime - lastHumidityReadTime >= 3000) {
     globalHumidity = dht.readHumidity();
@@ -225,6 +226,10 @@ void loop() {
     lcd.print("Light: ");
     lcd.print(globalLightIntensity);
     lcd.print("   ");
+
+    Serial.println("value");
+  Serial.println(deviceConfig.deviceId+ " , "+deviceConfig.commMethod+ " , "+deviceConfig.manualOverride);
+  
   }
 
   // Save data to SPIFFS once every minute
@@ -243,9 +248,7 @@ void loop() {
 
     handleSensorValues(globalTemperature, globalHumidity, globalLightIntensity);
 
-    if(!deviceConfig.manualOverride){
-      autoControlFan(false, false, globalTemperature);
-    }
+   
 
     delay(1000);
 
@@ -332,6 +335,7 @@ void handleConfigPage() {
 }
 
 void handleUpdateConfig() {
+  Serial.println("Reached here 1");
   if (!server.hasArg("plain")) {
     server.send(400, "text/plain", "Bad Request");
     return;
@@ -352,9 +356,12 @@ void handleUpdateConfig() {
   }
   serializeJson(doc, file);
   file.close();
-  
+
   server.send(200, "text/plain", "Configuration Updated");
   loadConfiguration(); // Make sure to reload the configuration after update
+  Serial.println("value");
+  Serial.println(deviceConfig.deviceId+ " , "+deviceConfig.commMethod+ " , "+deviceConfig.manualOverride);
+  
 }
 
 void loadConfiguration() {
@@ -377,7 +384,7 @@ void loadConfiguration() {
   deviceConfig.triggerTemp = doc["triggerTemp"].as<int>();
 
   //TODO: use the loaded values later
-
+  
   configFile.close();
 }
 
@@ -393,7 +400,7 @@ void handleSensorValues(float temperature, float humidity, int lightIntensity) {
 }
 
 void handleLDRRecords() {
-  String baseEndpoint = "http://192.168.104.157/final_project/viewldr25.php?NodeName=";
+  String baseEndpoint = "http://192.168.137.41/final_project/viewldr25.php?NodeName=";
   String lastEndpointCStr = baseEndpoint + DEVICE_ID;
 
   const char* lastEndpoint = lastEndpointCStr.c_str();
@@ -455,24 +462,18 @@ void handleDataRequest() {
   server.send(200, "application/json", jsonResponse);
 }
 
-void autoControlFan(bool forceAction, bool forceState, float currentTemperature){
-
-  if (!deviceConfig.manualOverride) {
-    if (currentTemperature >= deviceConfig.triggerTemp || forceAction && forceState) {
-      if (!fanState) { // If the fan is not already on, turn it on
-        fanState = true;
-        digitalWrite(fanPin, HIGH);
-        // Log or send a message indicating the fan was turned on automatically or due to a forced action
-
-      }
-    } else if (fanState || (forceAction && !forceState)) { // Conditions for turning off the fan
-      fanState = false;
-      digitalWrite(fanPin, LOW);
-      // Log or send a message indicating the fan was turned off
+void autoControlFan(float currentTemperature){
+    if (currentTemperature >= deviceConfig.triggerTemp) { 
+      fanState = true;
+      digitalWrite(fanPin, HIGH);
+      // Serial.println("FAN ON");
+      }else { 
+        fanState = false;
+        digitalWrite(fanPin, LOW);
+        // Serial.println("FAN OFF");
     }
   }
-  // Optionally, handle cases where manualOverride is true if needed
-}
+ 
 
 void sendData(float temperature, float humidity) {
   if (deviceConfig.commMethod == "mqtt") {
