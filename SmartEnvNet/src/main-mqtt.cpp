@@ -34,8 +34,6 @@ const int ldrPin = 33;
 const int ledPin = 13;
 const int fanPin = 19;
 bool fanState = false;
-bool forceAction = false;
-bool forceState = false;
 
 float globalTemperature;
 float globalHumidity;
@@ -200,18 +198,18 @@ void setup() {
 void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
-    String clientId = "ESP32Client-";   // Create a random client ID
-    clientId += String(random(0xffff), HEX);  //you could make this static
+    String clientId = "ESP32Client-";
+    clientId += String(WiFi.macAddress());
     // Attempt to connect
-    if (client.connect(clientId.c_str())){//, mqtt_username, mqtt_password)) {
-      Serial.println("connected");
+    if (client.connect(clientId.c_str())){
+      Serial.println("Local MQTT broker connected");
 
-      client.subscribe(topic1);   // subscribe the topics here
+      // client.subscribe(topic1);   // subscribe the topics here
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");   // Wait 5 seconds before retrying
-      delay(5000);
+      delay(2000);
     }
   }
 }
@@ -220,10 +218,6 @@ void loop() {
   unsigned long currentTime = millis();
   server.handleClient();
   blinkLED();
-
- 
-
-
 
   if (!client.connected()) reconnect();
   client.loop();
