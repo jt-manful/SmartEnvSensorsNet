@@ -56,7 +56,7 @@ const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
 const char *topic3 = "iotfinal/light1";
 
-const int NodeID = (DEVICE_ID == "indoor_sensor" ? 2 : 1);
+const int NodeID = DEVICE_ID;
 
 
 WiFiClient espClient;
@@ -99,7 +99,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Device ID: " DEVICE_ID);
+  Serial.println("Device ID: ");
+  Serial.print(DEVICE_ID);
+  Serial.println(" ");
    if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
