@@ -60,6 +60,8 @@ char page1[] PROGMEM = R"rawliteral(
       xhttp.open('GET', '/getLDRRecords', true);
       xhttp.send();
     }
+    showLDRRecords();
+    setInterval(showLDRRecords, 5000);
 
     function fetchSensorValue() {
         var xhttp = new XMLHttpRequest();

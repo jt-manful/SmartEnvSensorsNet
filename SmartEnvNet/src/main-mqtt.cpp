@@ -95,7 +95,7 @@ void connectMQTTBroker();
 void connectToWifi();
 void handleRoot();
 void handleConfigPage();
-void handleUpdateConfig();
+void handleUpdateConfig(const String& jsonStr);
 void handleTemperaturePage();
 void handleSensorValues(float globalTemperature, float globalHumidity, int globalLightIntensity); 
 void handleLDRRecords();
@@ -152,10 +152,19 @@ void setup() {
   server.on("/", HTTP_GET, handleRoot);
   server.on("/temperature", HTTP_GET, handleTemperaturePage);
   server.on("/config", HTTP_GET, handleConfigPage);
-  server.on("/updateConfig", HTTP_POST, handleUpdateConfig);
   server.on("/updateDeviceId", HTTP_POST, handleUpdateDeviceId);
   server.on("/getLDRRecords", HTTP_GET, handleLDRRecords);
   server.on("/data", HTTP_GET, handleDataRequest);
+  server.on("/updateConfig", HTTP_POST, []() {
+    if (server.hasArg("plain") == false) {
+      server.send(400, "text/plain", "Bad Request: No data received");
+      return;
+    }
+
+    String formDataJson = server.arg("plain");
+    handleUpdateConfig(formDataJson);
+    server.send(200, "text/plain", "Configuration Updated Successfully");
+  });
   server.on("/sensorValue", HTTP_GET, []() {
     handleSensorValues(globalTemperature, globalHumidity, globalLightIntensity);
   });
@@ -373,14 +382,12 @@ void handleConfigPage() {
   server.send_P(200, "text/html", page3);
 }
 
-void handleUpdateConfig() {
+void handleUpdateConfig(const String& jsonStr) {
   // Serial.println("Reached here 1");
   if (!server.hasArg("plain")) {
     server.send(400, "text/plain", "Bad Request");
     return;
   }
-
-  String jsonStr = "{\"deviceId\": \"" + String(DEVICE_ID) + "\", \"commMethod\": \"HTTP\", \"manualOverride\": 0, \"triggerTemp\": 30}";
 
   File configFile = SPIFFS.open("/config.json", "r");
   if (!configFile) {
