@@ -16,6 +16,7 @@
 #include <ArduinoOTA.h>
 #include <ESPmDNS.h>
 #include <WiFiUdp.h>
+#include <FS.h>
 #include "htmltext.h"
 
 // DHT sensor setup
@@ -377,21 +378,48 @@ void handleUpdateConfig() {
     return;
   }
 
+  String jsonStr = "{\"deviceId\": \"" + String(DEVICE_ID) + "\", \"commMethod\": \"HTTP\", \"manualOverride\": 0, \"triggerTemp\": 30}";
+
+  File configFile = SPIFFS.open("/config.json", "r");
+  if (!configFile) {
+    Serial.println("Failed to open config file for reading");
+    return;
+  }
+
+  size_t size = configFile.size();
+  std::unique_ptr<char[]> buf(new char[size]);
+  configFile.readBytes(buf.get(), size);
+  configFile.close();
+
   StaticJsonDocument<512> doc;
-  DeserializationError error = deserializeJson(doc, server.arg("plain"));
+  DeserializationError error = deserializeJson(doc, buf.get());
 
   if (error) {
     server.send(400, "text/plain", "Error parsing JSON");
     return;
   }
 
-  File file = SPIFFS.open("/config.json", FILE_WRITE);
-  if (!file) {
+
+  //write to spiffs
+  StaticJsonDocument<256> newDoc;
+  error = deserializeJson(newDoc, jsonStr);
+  if(error){
+    server.send(400, "text/plain", "Error parsing JSON");
+    return;
+  }
+  JsonObject newObj = newDoc.as<JsonObject>();
+
+  for (JsonPair p : newObj) {
+    doc[p.key()] = p.value();  // Update existing configuration with new values
+  }
+
+  configFile = SPIFFS.open("/config.json", FILE_WRITE);
+  if (!configFile) {
     server.send(500, "text/plain", "Failed to open config file for writing");
     return;
   }
-  serializeJson(doc, file);
-  file.close();
+  serializeJson(doc, configFile);
+  configFile.close();
 
   server.send(200, "text/plain", "Configuration Updated");
   loadConfiguration();

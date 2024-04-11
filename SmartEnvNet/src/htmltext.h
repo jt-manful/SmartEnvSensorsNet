@@ -127,12 +127,16 @@ const char page3[] PROGMEM = R"rawliteral(
       event.preventDefault();
 
       // Collect form data
-      const formData = {
-        deviceId: document.getElementById('deviceId').value,
-        commMethod: document.getElementById('commMethod').value,
-        manualOverride: document.getElementById('manualOverride').checked,
-        triggerTemp: document.getElementById('triggerTemp').value
-      };
+      let formData = {};
+      const deviceId = document.getElementById('deviceId').value;
+      const commMethod = document.getElementById('commMethod').value;
+      const manualOverride = document.getElementById('manualOverride').checked;
+      const triggerTemp = document.getElementById('triggerTemp').value;
+
+      if (deviceId) formData.deviceId = deviceId;
+      if (commMethod) formData.commMethod = commMethod;
+      formData.manualOverride = manualOverride;
+      if (triggerTemp) formData.triggerTemp = triggerTemp;
 
       // Send form data as JSON via Fetch API
       fetch('/updateConfig', {
