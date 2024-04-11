@@ -22,6 +22,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 // LDR setup
 const int ldrPin = 33; 
+const int ledPin = 13;
 const int fanPin = 19;
 bool fanState = false;
 bool forceAction = false;
@@ -73,6 +74,11 @@ struct DeviceConfig {
   float triggerTemp;
 } deviceConfig;
 
+
+const unsigned long blinkInterval = 2000; // 2 seconds
+unsigned long previousMillis = 0;
+
+void blinkLED();
 void publishMessage(const char* topic, String payload , boolean retained);
 void reconnect();
 void connectMQTTBroker();
@@ -114,6 +120,7 @@ void setup() {
 
   pinMode(ldrPin, INPUT);
   pinMode(fanPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
 
   WiFi.mode(WIFI_AP);
   delay(1000);
@@ -189,6 +196,9 @@ void reconnect() {
 void loop() {
   unsigned long currentTime = millis();
   server.handleClient();
+
+  blinkLED();
+
   if (!client.connected()) reconnect();
   client.loop();
 
@@ -503,4 +513,18 @@ void handleUpdateDeviceId() {
   }
 
   http.end();
+}
+
+void blinkLED() {
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= blinkInterval) {
+    previousMillis = currentMillis;
+
+    if (digitalRead(ledPin) == LOW) {
+      digitalWrite(ledPin, HIGH);
+    } else {
+      digitalWrite(ledPin, LOW);
+    }
+  }
 }
