@@ -24,3 +24,15 @@ CREATE TABLE SensorData (
     FOREIGN KEY (NodeID) REFERENCES SmartNodes(NodeID),
     FOREIGN KEY (TypeID) REFERENCES SensorTypes(TypeID)
 );
+
+-- Creation of SensorData Table
+CREATE TABLE MLDATA (
+    DataID INT AUTO_INCREMENT PRIMARY KEY,
+    NodeID INT,
+    Temperature DECIMAL,
+    LDR DECIMAL,
+    Humidity DECIMAL,
+    Timestamp DATETIME NOT NULL,
+    FOREIGN KEY (NodeID) REFERENCES SmartNodes(NodeID),
+    FOREIGN KEY (TypeID) REFERENCES SensorTypes(TypeID)
+);
