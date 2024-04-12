@@ -50,6 +50,7 @@ unsigned long lastSaveTime = 0;
 const char* ssid = "Tsatsu";
 const char* password = "tsatsu123";
 const char* serverName = "http://192.168.137.41/final_project/api.php";
+const char* mlServerName = "http://192.168.137.41/final_project/mldata.php";
 
 WebServer server(80);
 char ssidAP[] = "johntsatsu";
@@ -64,6 +65,7 @@ const int mqtt_port =1883;
 const char *topic1 = "iotfinal/temp1";
 const char *topic2 = "iotfinal/hum1";
 const char *topic3 = "iotfinal/light1";
+const char *topic4 = "iotfinal/mldata1";
 
 const int NodeID = DEVICE_ID;
 
@@ -106,6 +108,7 @@ void sendDataHum();
 void sendDataTempxLDR();
 void mqttPostingHum();
 void mqttPostingTempXLDR();
+void MLData();
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String incommingMessage = "";
@@ -264,6 +267,7 @@ void loop() {
      // http x mqtt 
     if (deviceConfig.commMethod == "http"){
       sendDataTempxLDR();
+      MLData();
     }
     else if (deviceConfig.commMethod == "mqtt"){
       mqttPostingTempXLDR();
@@ -657,7 +661,35 @@ void mqttPostingTempXLDR(){
   String dataStringTemp = String(NodeID) + "," + String(globalTemperature);
   String dataStringLDR = String(NodeID) + "," + String(globalLightIntensity);
 
+  String data_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"Temperature\":\"" + String(globalTemperature) + "\",\"LDR\":\"" + String(globalLightIntensity) + "\", \"Humidity\":\"" + String(globalHumidity) + "\"}";
+
   publishMessage(topic3,dataStringLDR,true);  
   publishMessage(topic1,dataStringTemp,true);  
+  publishMessage(topic4,data_json,true);
 
+}
+
+
+void MLData() {
+
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, mlServerName);
+    http.addHeader("Content-Type", "application/json");
+    String data_json =  "{\"NodeID\":\"" + String(NodeID) + "\",\"Temperature\":\"" + String(globalTemperature) + "\",\"LDR\":\"" + String(globalLightIntensity) + "\", \"Humidity\":\"" + String(globalHumidity) + "\"}";
+
+    Serial.println("jsons: ");
+    Serial.println(data_json);
+
+
+    int httpResponseCode = http.POST(data_json);
+    Serial.print("HTTP Response code (hum): ");
+    Serial.println(httpResponseCode);
+    
+    http.end();
+
+  } else {
+    connectToWifi();
+  }
 }
