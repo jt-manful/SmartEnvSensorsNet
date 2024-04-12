@@ -4,7 +4,7 @@ import requests
 MQTT_SERVER = "192.168.137.41"
 MQTT_PATH = "#"
 URI = 'http://192.168.137.41/final_project/api.php'
- 
+MLURI = 'http://192.168.137.41/final_project/mldata.php'
 # The callback when conected.
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc)) 
@@ -16,20 +16,29 @@ def on_message(client, userdata, msg):
     # print(msg.payload.decode('utf-8'))
      
     NodeID = msg.payload.decode('utf-8').split(",")[0]
-    Value = msg.payload.decode('utf-8').split(",")[1]
 
     if msg.topic == "iotfinal/temp1":
+        Value = msg.payload.decode('utf-8').split(",")[1]
+
         response = requests.post(URI, json={"NodeID":f"{NodeID}","TypeID":"1", "Value":Value})
         print(f"Node {NodeID} positng temp Value {Value}")
         print("temp status: ", response.status_code)
     elif msg.topic == "iotfinal/hum1":
+        Value = msg.payload.decode('utf-8').split(",")[1]
+
         response = requests.post(URI, json={"NodeID":f"{NodeID}","TypeID":"3", "Value":Value})
         print(f"Node {NodeID} positng humidity Value {Value}")
         print("hum status: ", response.status_code)
     elif msg.topic == "iotfinal/light1":
+        Value = msg.payload.decode('utf-8').split(",")[1]
         response = requests.post(URI, json={"NodeID":f"{NodeID}","TypeID":"2", "Value":Value})
         print(f"Node {NodeID} positng light Value {Value}")
         print("light status: ", response.status_code)
+    elif msg.topic == "iotfinal/mldata1":
+        temp = msg.payload.decode('utf-8').split(",")[1]
+        ldr = msg.payload.decode('utf-8').split(",")[2]
+        hum = msg.payload.decode('utf-8').split(",")[3]
+        response = requests.post(URI, json={"NodeID":f"{NodeID}","Temperature": temp, "LDR":ldr, "Humidity":hum})
     else:
         # Handle messages from other topics
         pass
