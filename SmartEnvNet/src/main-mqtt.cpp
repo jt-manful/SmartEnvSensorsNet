@@ -361,7 +361,7 @@ void loop() {
 
 
  if(deviceConfig.manualOverride == 1){ 
-      autoControlFan(globalTemperature);
+    autoControlFan(globalTemperature);
     }
   // Read and display humidity every 3 seconds
   if (currentTime - lastHumidityReadTime >= 3000) {
@@ -395,7 +395,10 @@ void loop() {
   // Read and display temperature and light intensity every 6 seconds
   if (currentTime - lastTemperatureAndLightReadTime >= 6000) {
     globalTemperature = dht.readTemperature();
-    globalLightIntensity = analogRead(ldrPin);
+    int ldrreading = analogRead(ldrPin);
+    int resistance = 10000.0 / (4095.0 / ldrreading - 1);
+    globalLightIntensity = 2500 / resistance;
+    // globalLightIntensity = analogRead(ldrPin);
     lastTemperatureAndLightReadTime = currentTime;
 
      // http x mqtt 
